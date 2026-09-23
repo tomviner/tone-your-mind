@@ -73,9 +73,46 @@ class ToneContractTests(unittest.TestCase):
         self.assertIn("Change only tone-bearing wording", system)
         self.assertIn("Semantic fidelity outranks the target score", system)
         self.assertIn("reason, consequence, risk, deadline, or circumstance", system)
+        self.assertNotIn(
+            "Never add facts, names, dates, threats, promises, or instructions",
+            system,
+        )
         self.assertIn("silently compare every clause", system)
         self.assertIn("Never mention the target score", system)
         self.assertIn("percentage, rating, slider, Jev", system)
+
+    def test_writer_prompt_escalates_plain_language_feedback_after_each_miss(self):
+        cases = [
+            (2.1, "a little further"),
+            (1.8, "clearly stronger"),
+            (1.4, "much stronger"),
+            (0.9, "dramatically stronger"),
+            (0.4, "100 times stronger"),
+        ]
+
+        for score, expected in cases:
+            with self.subTest(score=score):
+                result = build_writer_input(
+                    "Please read the manual.",
+                    "panic",
+                    2.4,
+                    [{"phrase": "Please read the manual.", "score": score}],
+                )
+                prompt = result["messages"][-1]["content"]
+                self.assertIn(expected, prompt)
+                self.assertIn('toward the "Full panic" end', prompt)
+
+    def test_writer_prompt_pushes_toward_the_low_end_after_overshooting(self):
+        result = build_writer_input(
+            "Please read the manual.",
+            "panic",
+            1.0,
+            [{"phrase": "READ IT NOW!", "score": 3.0}],
+        )
+
+        prompt = result["messages"][-1]["content"]
+        self.assertIn('toward the "Unruffled" end', prompt)
+        self.assertIn("100 times stronger", prompt)
 
     def test_writer_response_removes_common_wrappers_but_rejects_bad_output(self):
         self.assertEqual(

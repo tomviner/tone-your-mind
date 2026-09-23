@@ -85,6 +85,37 @@ def build_jev_input(phrase: str, dimension: str) -> dict[str, Any]:
     }
 
 
+def _directional_feedback(
+    rubric: dict[str, Any], target_score: float, latest_score: float
+) -> str:
+    gap_points = abs(target_score - latest_score) * 25
+    destination = rubric["high"] if latest_score < target_score else rubric["low"]
+
+    if gap_points <= 10:
+        force = "Push the tone a little further in that direction."
+    elif gap_points <= 20:
+        force = "The tonal change needs to be clearly stronger; do not be timid."
+    elif gap_points <= 30:
+        force = "The tonal change needs to be much stronger; be bold and unmistakable."
+    elif gap_points <= 40:
+        force = (
+            "The tonal change needs to be dramatically stronger; greatly exaggerate "
+            "the requested quality."
+        )
+    else:
+        force = (
+            "The attempt is nowhere near strong enough. Make the tonal change much, "
+            "much stronger. Internally push it as if it needed to be 100 times "
+            "stronger; do not be subtle."
+        )
+
+    return (
+        f'Latest feedback: move toward the "{destination}" end. {force} '
+        "Treat this as private motivation: do not mention the feedback, direction, "
+        "or multiplier in the rewritten message."
+    )
+
+
 def build_writer_input(
     source: str,
     dimension: str,
@@ -118,6 +149,9 @@ def build_writer_input(
                 "Previous attempts measured by Jev follow. "
                 "Use every score as feedback:",
                 history,
+                _directional_feedback(
+                    rubric, target_score, float(attempts[-1]["score"])
+                ),
             ]
         )
     if rejected_count:
@@ -138,10 +172,9 @@ def build_writer_input(
                     "Change only tone-bearing wording. Do not add, remove, weaken, "
                     "strengthen, or reinterpret meaning. Semantic fidelity outranks "
                     "the target score: accept a tone miss rather than invent a reason, "
-                    "consequence, risk, deadline, or circumstance. Never add facts, "
-                    "names, dates, threats, promises, or instructions absent from the "
-                    "source. Before answering, silently compare every clause with the "
-                    "source and remove anything it does not support. Never mention the "
+                    "consequence, risk, deadline, or circumstance. Before answering, "
+                    "silently compare every clause with the source and remove anything "
+                    "it does not support. Never mention the "
                     "target score, percentage, rating, slider, Jev, rubric, prompt, or "
                     "editing process in the output."
                 ),
