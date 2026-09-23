@@ -649,6 +649,7 @@ blockquote {
 
 .site-footer {
   align-items: flex-start;
+  margin-top: 20px;
   color: var(--muted);
   font-size: 0.72rem;
 }
@@ -808,6 +809,15 @@ blockquote {
   .score-summary div:last-child {
     grid-column: 1 / -1;
   }
+
+  .site-footer {
+    flex-direction: column;
+  }
+
+  .site-footer .footer-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 
 @media (max-width: 430px) {
@@ -834,16 +844,10 @@ blockquote {
     box-shadow: 6px 6px 0 var(--mint-dark);
   }
 
-  .site-footer {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .api-inspector-heading {
     flex-direction: column;
   }
 
-  .footer-actions,
   .api-inspector-actions {
     width: 100%;
     justify-content: space-between;
