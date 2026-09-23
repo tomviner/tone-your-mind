@@ -25,6 +25,12 @@ const STARTING_TEXTS = [
   "I have updated the shared document.",
 ] as const;
 
+type ToneRecipe = {
+  source: string;
+  dimensionKey: DimensionKey;
+  target: number;
+};
+
 const sessionId = (): string => {
   const stored = window.localStorage.getItem(SESSION_STORAGE_KEY);
   if (stored && SESSION_PATTERN.test(stored)) return stored;
@@ -55,6 +61,29 @@ const isPercentage = (value: unknown): value is number =>
   Number.isFinite(value) &&
   value >= 0 &&
   value <= 100;
+
+const recipeFromLocation = (): ToneRecipe => {
+  const params = new URLSearchParams(window.location.search);
+  const suppliedSource = params.get("text");
+  const suppliedDimension = params.get("dimension");
+  const suppliedTarget = params.get("target");
+  const parsedTarget =
+    suppliedTarget === null ? Number.NaN : Number(suppliedTarget);
+  const dimensionKey =
+    suppliedDimension &&
+    DIMENSION_KEYS.includes(suppliedDimension as DimensionKey)
+      ? (suppliedDimension as DimensionKey)
+      : "panic";
+
+  return {
+    source:
+      suppliedSource === null
+        ? DEFAULT_SOURCE
+        : suppliedSource.slice(0, MAX_SOURCE_LENGTH),
+    dimensionKey,
+    target: isPercentage(parsedTarget) ? Math.round(parsedTarget / 5) * 5 : 60,
+  };
+};
 
 const isToneAttempt = (value: unknown): value is ToneAttempt =>
   isRecord(value) &&
@@ -126,9 +155,10 @@ const isToneResponse = (value: unknown): value is ToneResponse => {
 };
 
 export default function App() {
-  const [source, setSource] = useState(DEFAULT_SOURCE);
-  const [dimensionKey, setDimensionKey] = useState<DimensionKey>("panic");
-  const [target, setTarget] = useState(60);
+  const [initialRecipe] = useState(recipeFromLocation);
+  const [source, setSource] = useState(initialRecipe.source);
+  const [dimensionKey, setDimensionKey] = useState(initialRecipe.dimensionKey);
+  const [target, setTarget] = useState(initialRecipe.target);
   const [result, setResult] = useState<ToneResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(
@@ -151,6 +181,20 @@ export default function App() {
       ),
     [],
   );
+  const recipeUrl = useMemo(() => {
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.hash = "";
+    url.searchParams.set("text", source);
+    url.searchParams.set("dimension", dimensionKey);
+    url.searchParams.set("target", String(target));
+    return url.toString();
+  }, [dimensionKey, source, target]);
+  const siblingUrl = useMemo(() => {
+    const url = new URL("https://jev-tone.tomv.uk/");
+    url.searchParams.set("text", result?.phrase ?? source);
+    return url.toString();
+  }, [result, source]);
 
   useEffect(() => {
     const syncInspectorToHash = () => {
@@ -349,8 +393,8 @@ export default function App() {
           </a>
           <span className="model-credit">Granite writes · Jev scores</span>
         </div>
-        <a className="sibling-link" href="https://jev-tone.tomv.uk">
-          mind your tone <span aria-hidden="true">↗</span>
+        <a className="sibling-link" href={siblingUrl}>
+          <span aria-hidden="true">← </span>mind your tone
         </a>
       </header>
 
@@ -495,7 +539,9 @@ export default function App() {
         <section className="result-card" aria-label="Toned result">
           <div className="result-heading">
             <div>
-              <p className="kicker">best of {result.attempts.length}</p>
+              <p className="kicker">
+                machine attempt · best of {result.attempts.length}
+              </p>
               <h2>{result.hit ? "Close enough." : "Closest one."}</h2>
             </div>
             <div className={`verdict ${result.hit ? "is-hit" : "is-miss"}`}>
@@ -562,6 +608,9 @@ export default function App() {
             rel="noreferrer"
           >
             source
+          </a>
+          <a className="text-button" href={recipeUrl}>
+            share recipe
           </a>
         </div>
       </footer>

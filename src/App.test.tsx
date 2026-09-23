@@ -92,14 +92,73 @@ afterEach(() => {
 });
 
 describe("tone your mind", () => {
-  test("names the original game in the header link", () => {
+  test("hands the current starting text back to the original game", () => {
     render(<App />);
 
-    expect(
-      within(screen.getByRole("banner")).getByRole("link", {
-        name: "mind your tone",
-      }),
-    ).toHaveAttribute("href", "https://jev-tone.tomv.uk");
+    const link = within(screen.getByRole("banner")).getByRole("link", {
+      name: "mind your tone",
+    });
+    const url = new URL(link.getAttribute("href")!);
+
+    expect(link).toHaveTextContent("← mind your tone");
+    expect(url.origin).toBe("https://jev-tone.tomv.uk");
+    expect(url.searchParams.get("text")).toBe("Please read the manual.");
+  });
+
+  test("loads a shared tone recipe from the URL", () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/?text=Could%20you%20send%20that%3F&dimension=whimsy&target=95",
+    );
+    render(<App />);
+
+    expect(screen.getByLabelText(/starting text/i)).toHaveValue(
+      "Could you send that?",
+    );
+    expect(screen.getByLabelText(/tone dimension/i)).toHaveValue("whimsy");
+    expect(screen.getByRole("slider", { name: /whimsy level/i })).toHaveValue(
+      "95",
+    );
+  });
+
+  test("sanitizes malformed tone recipes at the URL boundary", () => {
+    const supplied = "x".repeat(260);
+    window.history.replaceState(
+      null,
+      "",
+      `/?text=${encodeURIComponent(supplied)}&dimension=unknown&target=104`,
+    );
+
+    render(<App />);
+
+    expect(screen.getByLabelText(/starting text/i)).toHaveValue(
+      "x".repeat(240),
+    );
+    expect(screen.getByLabelText(/tone dimension/i)).toHaveValue("panic");
+    expect(screen.getByRole("slider", { name: /panic level/i })).toHaveValue(
+      "60",
+    );
+  });
+
+  test("keeps the editable tone recipe shareable", () => {
+    render(<App />);
+
+    typeSource("A shared line.");
+    fireEvent.change(screen.getByLabelText(/tone dimension/i), {
+      target: { value: "whimsy" },
+    });
+    fireEvent.change(screen.getByRole("slider", { name: /whimsy level/i }), {
+      target: { value: "95" },
+    });
+
+    const link = screen.getByRole("link", { name: "share recipe" });
+    const url = new URL(link.getAttribute("href")!, window.location.href);
+
+    expect(url.searchParams.get("text")).toBe("A shared line.");
+    expect(url.searchParams.get("dimension")).toBe("whimsy");
+    expect(url.searchParams.get("target")).toBe("95");
+    expect(url.hash).toBe("");
   });
 
   test("credits Jev's role beside the game name", () => {
@@ -210,6 +269,24 @@ describe("tone your mind", () => {
     });
   });
 
+  test("hands the best machine attempt back to the original game", async () => {
+    prepareSession();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json(resultBody)),
+    );
+    render(<App />);
+
+    submit();
+    await screen.findByText(resultBody.phrase);
+
+    const link = within(screen.getByRole("banner")).getByRole("link", {
+      name: "mind your tone",
+    });
+    const url = new URL(link.getAttribute("href")!);
+    expect(url.searchParams.get("text")).toBe(resultBody.phrase);
+  });
+
   test("shows measured truth and the complete attempt trail", async () => {
     prepareSession();
     vi.stubGlobal(
@@ -228,6 +305,7 @@ describe("tone your mind", () => {
     expect(within(result).getByText("62.5%")).toBeInTheDocument();
     expect(within(result).getByText("2.5 points away")).toBeInTheDocument();
     expect(within(result).getByText("Close enough.")).toBeInTheDocument();
+    expect(within(result).getByText(/machine attempt/i)).toBeInTheDocument();
     expect(within(result).getAllByRole("listitem")).toHaveLength(2);
     expect(within(result).getByText("attempt 1 · 12.5%")).toBeInTheDocument();
     expect(within(result).getByText("attempt 2 · 62.5%")).toBeInTheDocument();
