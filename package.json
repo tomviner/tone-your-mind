@@ -13,10 +13,10 @@
     "test:js": "vitest run",
     "test:py": "uv run python -m unittest discover -s tests -p 'test_*.py'",
     "typecheck": "tsc -b --pretty false",
-    "format": "npm run format:js && uv run ruff format worker tests",
-    "format:js": "prettier --write \"src/**/*.{ts,tsx,css}\" \"worker/**/*.json\" \"*.{json,ts,html,md}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"worker/**/*.json\" \"*.{json,ts,html,md}\" && uv run ruff format --check worker tests",
-    "lint:py": "uv run ruff check worker tests"
+    "format": "npm run format:js && uv run ruff format worker tests lab",
+    "format:js": "prettier --write \"src/**/*.{ts,tsx,css,json}\" \"worker/**/*.json\" \"lab/**/*.json\" \"*.{json,ts,html,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\" \"worker/**/*.json\" \"lab/**/*.json\" \"*.{json,ts,html,md}\" && uv run ruff format --check worker tests lab",
+    "lint:py": "uv run ruff check worker tests lab"
   },
   "dependencies": {
     "react": "^18.3.1",

@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from worker.toning import (
     DIMENSIONS,
     MAX_ATTEMPTS,
+    PROMPT_PROGRAM,
     WRITER_MODEL,
     build_jev_input,
     build_writer_input,
@@ -24,6 +25,11 @@ def jev_response(score, confidence=0.9):
 class ToneContractTests(unittest.TestCase):
     def test_uses_the_fast_low_cost_writer(self):
         self.assertEqual(WRITER_MODEL, "@cf/ibm-granite/granite-4.0-h-micro")
+        self.assertEqual(PROMPT_PROGRAM["writer_model"], WRITER_MODEL)
+        self.assertGreater(
+            PROMPT_PROGRAM["metric"]["tone_weight"],
+            PROMPT_PROGRAM["metric"]["meaning_weight"],
+        )
 
     def test_catalogue_keeps_original_dimensions_and_adds_requested_fun(self):
         self.assertIn("urgency", DIMENSIONS)
@@ -67,27 +73,23 @@ class ToneContractTests(unittest.TestCase):
         self.assertIn("Attempt 2 (score 1.60): Read it soon.", prompt)
         self.assertIn("240 characters", prompt)
         system = result["messages"][0]["content"]
-        self.assertIn("constrained tone editor, not a copywriter", system)
-        self.assertIn("preserve every factual claim, request, commitment", system)
-        self.assertIn("negation, name, number, date, condition, and action", system)
-        self.assertIn("Change only tone-bearing wording", system)
-        self.assertIn("Semantic fidelity outranks the target score", system)
-        self.assertIn("reason, consequence, risk, deadline, or circumstance", system)
+        self.assertIn("exact target sentiment", system)
+        self.assertIn("focusing on tone accuracy", system)
+        self.assertIn("practical meaning", system)
         self.assertNotIn(
             "Never add facts, names, dates, threats, promises, or instructions",
             system,
         )
-        self.assertIn("silently compare every clause", system)
-        self.assertIn("Never mention the target score", system)
+        self.assertIn("Never mention a score", system)
         self.assertIn("percentage, rating, slider, Jev", system)
 
     def test_writer_prompt_escalates_plain_language_feedback_after_each_miss(self):
         cases = [
-            (2.1, "a little further"),
-            (1.8, "clearly stronger"),
-            (1.4, "much stronger"),
-            (0.9, "dramatically stronger"),
-            (0.4, "100 times stronger"),
+            (2.1, "noticeably further"),
+            (1.8, "several times more obvious"),
+            (1.4, "roughly twentyfold"),
+            (0.9, "fifty times stronger"),
+            (0.4, "one hundred times harder"),
         ]
 
         for score, expected in cases:
@@ -102,6 +104,28 @@ class ToneContractTests(unittest.TestCase):
                 self.assertIn(expected, prompt)
                 self.assertIn('toward the "Full panic" end', prompt)
 
+    def test_writer_prompt_multiplies_emphasis_by_iteration(self):
+        attempts = [
+            {"phrase": "Please read the manual.", "score": 0.2},
+            {"phrase": "Please, read the manual soon.", "score": 0.4},
+            {"phrase": "Read the manual now!", "score": 0.8},
+        ]
+
+        first = build_writer_input("Please read the manual.", "panic", 4, attempts[:1])[
+            "messages"
+        ][-1]["content"]
+        second = build_writer_input(
+            "Please read the manual.", "panic", 4, attempts[:2]
+        )["messages"][-1]["content"]
+        final = build_writer_input("Please read the manual.", "panic", 4, attempts)[
+            "messages"
+        ][-1]["content"]
+
+        self.assertIn("firm correction", first)
+        self.assertIn("previous correction failed", second)
+        self.assertIn("FINAL ATTEMPT", final)
+        self.assertIn("melodramatic, superlative, relentless", final)
+
     def test_writer_prompt_pushes_toward_the_low_end_after_overshooting(self):
         result = build_writer_input(
             "Please read the manual.",
@@ -112,7 +136,7 @@ class ToneContractTests(unittest.TestCase):
 
         prompt = result["messages"][-1]["content"]
         self.assertIn('toward the "Unruffled" end', prompt)
-        self.assertIn("100 times stronger", prompt)
+        self.assertIn("one hundred times harder", prompt)
 
     def test_writer_response_removes_common_wrappers_but_rejects_bad_output(self):
         self.assertEqual(

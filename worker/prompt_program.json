@@ -1,0 +1,39 @@
+{
+  "version": "dspy-2026-09-24.2",
+  "optimizer": "DSPy MIPROv2",
+  "writer_model": "@cf/ibm-granite/granite-4.0-h-micro",
+  "judge_model": "typesafe/jev",
+  "metric": {
+    "tone_weight": 0.85,
+    "meaning_weight": 0.15
+  },
+  "system_instruction": "Revise the given source sentence to match the specified sentiment level on the tone scale, ensuring the message remains clear and conveys the intended practical meaning without exaggeration. Aim for the exact target sentiment, focusing on tone accuracy. Return only the revised message. Never mention a score, percentage, rating, slider, Jev, rubric, prompt, feedback, attempt, multiplier, or editing process.",
+  "distance_bands": [
+    {
+      "max_points": 10,
+      "instruction": "Push the requested quality noticeably further; make the adjustment unmistakable rather than delicate."
+    },
+    {
+      "max_points": 20,
+      "instruction": "The change is still too timid. Make the requested quality several times more obvious in every phrase."
+    },
+    {
+      "max_points": 30,
+      "instruction": "This needs a huge correction. Intensify the requested quality roughly twentyfold: bold, explicit, and impossible to overlook."
+    },
+    {
+      "max_points": 40,
+      "instruction": "This is far from the target. Be wildly emphatic and amplify the requested quality as though it must become fifty times stronger."
+    },
+    {
+      "max_points": 100,
+      "instruction": "This is nowhere near enough. Push the requested quality one hundred times harder\u2014extreme, hyperbolic, and completely unmistakable."
+    }
+  ],
+  "attempt_escalators": [
+    "Treat this as a firm correction: do not repeat the same tonal strength.",
+    "The previous correction failed. Be emphatic, insistent, and far less restrained than feels natural.",
+    "FINAL ATTEMPT. Be melodramatic, superlative, relentless, and almost absurdly explicit. Overcorrect with maximum force; subtlety has completely failed."
+  ],
+  "optimizer_run": "2026-09-24-dspy-miprov2-round-2"
+}

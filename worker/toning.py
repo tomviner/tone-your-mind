@@ -8,6 +8,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 DIMENSIONS = json.loads(Path(__file__).with_name("dimensions.json").read_text())
+PROMPT_PROGRAM = json.loads(Path(__file__).with_name("prompt_program.json").read_text())
 
 WRITER_MODEL = "@cf/ibm-granite/granite-4.0-h-micro"
 JEV_MODEL = "typesafe/jev"
@@ -23,6 +24,30 @@ NUMBER_RE = re.compile(r"\b\d+(?:\.\d+)?%?\b")
 
 AiRunner = Callable[[str, dict[str, Any]], Awaitable[Any]]
 EventEmitter = Callable[[dict[str, Any]], None]
+
+
+def _validate_prompt_program(program: Any) -> None:
+    if not isinstance(program, dict):
+        raise ValueError("prompt program must be an object")
+    if program.get("writer_model") != WRITER_MODEL:
+        raise ValueError("prompt program writer model does not match production")
+    if not isinstance(program.get("system_instruction"), str):
+        raise ValueError("prompt program has no system instruction")
+    bands = program.get("distance_bands")
+    escalators = program.get("attempt_escalators")
+    if not isinstance(bands, list) or len(bands) != 5:
+        raise ValueError("prompt program must contain five distance bands")
+    if not isinstance(escalators, list) or len(escalators) != 3:
+        raise ValueError("prompt program must contain three attempt escalators")
+    if any(
+        not isinstance(band, dict)
+        or not _is_number(band.get("max_points"))
+        or not isinstance(band.get("instruction"), str)
+        for band in bands
+    ):
+        raise ValueError("prompt program contains an invalid distance band")
+    if any(not isinstance(value, str) for value in escalators):
+        raise ValueError("prompt program contains an invalid attempt escalator")
 
 
 def _field(value: Any, key: str) -> Any:
@@ -51,6 +76,9 @@ def _is_number(value: Any) -> bool:
         and isinstance(value, (int, float))
         and math.isfinite(value)
     )
+
+
+_validate_prompt_program(PROMPT_PROGRAM)
 
 
 def _first(value: Any) -> Any:
@@ -86,31 +114,24 @@ def build_jev_input(phrase: str, dimension: str) -> dict[str, Any]:
 
 
 def _directional_feedback(
-    rubric: dict[str, Any], target_score: float, latest_score: float
+    rubric: dict[str, Any],
+    target_score: float,
+    latest_score: float,
+    attempt_number: int,
 ) -> str:
     gap_points = abs(target_score - latest_score) * 25
     destination = rubric["high"] if latest_score < target_score else rubric["low"]
-
-    if gap_points <= 10:
-        force = "Push the tone a little further in that direction."
-    elif gap_points <= 20:
-        force = "The tonal change needs to be clearly stronger; do not be timid."
-    elif gap_points <= 30:
-        force = "The tonal change needs to be much stronger; be bold and unmistakable."
-    elif gap_points <= 40:
-        force = (
-            "The tonal change needs to be dramatically stronger; greatly exaggerate "
-            "the requested quality."
-        )
-    else:
-        force = (
-            "The attempt is nowhere near strong enough. Make the tonal change much, "
-            "much stronger. Internally push it as if it needed to be 100 times "
-            "stronger; do not be subtle."
-        )
+    force = next(
+        band["instruction"]
+        for band in PROMPT_PROGRAM["distance_bands"]
+        if gap_points <= float(band["max_points"])
+    )
+    escalators = PROMPT_PROGRAM["attempt_escalators"]
+    escalation = escalators[min(max(attempt_number, 1), len(escalators)) - 1]
 
     return (
         f'Latest feedback: move toward the "{destination}" end. {force} '
+        f"{escalation} "
         "Treat this as private motivation: do not mention the feedback, direction, "
         "or multiplier in the rewritten message."
     )
@@ -150,7 +171,10 @@ def build_writer_input(
                 "Use every score as feedback:",
                 history,
                 _directional_feedback(
-                    rubric, target_score, float(attempts[-1]["score"])
+                    rubric,
+                    target_score,
+                    float(attempts[-1]["score"]),
+                    len(attempts),
                 ),
             ]
         )
@@ -165,19 +189,7 @@ def build_writer_input(
         "messages": [
             {
                 "role": "system",
-                "content": (
-                    "You are a constrained tone editor, not a copywriter. When a "
-                    "source is supplied, preserve every factual claim, request, "
-                    "commitment, negation, name, number, date, condition, and action. "
-                    "Change only tone-bearing wording. Do not add, remove, weaken, "
-                    "strengthen, or reinterpret meaning. Semantic fidelity outranks "
-                    "the target score: accept a tone miss rather than invent a reason, "
-                    "consequence, risk, deadline, or circumstance. Before answering, "
-                    "silently compare every clause with the source and remove anything "
-                    "it does not support. Never mention the "
-                    "target score, percentage, rating, slider, Jev, rubric, prompt, or "
-                    "editing process in the output."
-                ),
+                "content": PROMPT_PROGRAM["system_instruction"],
             },
             {"role": "user", "content": "\n".join(user_parts)},
         ],
@@ -438,6 +450,10 @@ async def tone_request(
         "distance": distance,
         "hit": distance <= 5,
         "attempts": public_attempts,
-        "models": {"writer": WRITER_MODEL, "scorer": scorer_model},
+        "models": {
+            "writer": WRITER_MODEL,
+            "scorer": scorer_model,
+            "prompt_program": PROMPT_PROGRAM["version"],
+        },
         "inspection": {"model_calls": model_calls},
     }, 200

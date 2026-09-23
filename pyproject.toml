@@ -11,6 +11,9 @@ dev = [
     "workers-py>=1.16.2",
     "workers-runtime-sdk>=1.6.8",
 ]
+lab = [
+    "dspy[optuna]>=3.3,<4",
+]
 
 [tool.ruff]
 target-version = "py313"

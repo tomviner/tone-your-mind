@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import ApiInspector, { type ApiLogEntry } from "./ApiInspector";
+import Lab from "./Lab";
 import { DIMENSIONS, DIMENSION_KEYS, type DimensionKey } from "./dimensions";
 import type { ToneAttempt, ToneResponse } from "./types";
 
@@ -154,7 +155,7 @@ const isToneResponse = (value: unknown): value is ToneResponse => {
   );
 };
 
-export default function App() {
+function ToneTool() {
   const [initialRecipe] = useState(recipeFromLocation);
   const [source, setSource] = useState(initialRecipe.source);
   const [dimensionKey, setDimensionKey] = useState(initialRecipe.dimensionKey);
@@ -594,6 +595,7 @@ export default function App() {
       <footer className="site-footer">
         <span>Granite writes · TypeSafe Jev scores · nothing is saved</span>
         <div className="footer-actions">
+          <a href="/lab">prompt lab</a>
           <a
             href="#inspect-api"
             className="text-button"
@@ -624,4 +626,8 @@ export default function App() {
       )}
     </main>
   );
+}
+
+export default function App() {
+  return window.location.pathname === "/lab" ? <Lab /> : <ToneTool />;
 }

@@ -1,0 +1,93 @@
+[
+  {
+    "id": "manual-panic-60",
+    "split": "train",
+    "source": "Please read the manual.",
+    "dimension": "panic",
+    "target": 60
+  },
+  {
+    "id": "dinner-drama-100",
+    "split": "train",
+    "source": "Chloe, could you please eat your dinner?",
+    "dimension": "drama",
+    "target": 100
+  },
+  {
+    "id": "bins-urgency-80",
+    "split": "train",
+    "source": "Could you put the bins out?",
+    "dimension": "urgency",
+    "target": 80
+  },
+  {
+    "id": "meeting-friendly-85",
+    "split": "train",
+    "source": "The meeting starts at nine.",
+    "dimension": "friendliness",
+    "target": 85
+  },
+  {
+    "id": "sheet-smug-75",
+    "split": "train",
+    "source": "I fixed the spreadsheet.",
+    "dimension": "smugness",
+    "target": 75
+  },
+  {
+    "id": "parcel-ominous-90",
+    "split": "train",
+    "source": "Your parcel is behind the shed.",
+    "dimension": "ominousness",
+    "target": 90
+  },
+  {
+    "id": "manual-calm-10",
+    "split": "train",
+    "source": "Please read the manual.",
+    "dimension": "panic",
+    "target": 10
+  },
+  {
+    "id": "report-blunt-20",
+    "split": "train",
+    "source": "Could you send the report today?",
+    "dimension": "politeness",
+    "target": 20
+  },
+  {
+    "id": "document-passive-70",
+    "split": "eval",
+    "source": "I have updated the shared document.",
+    "dimension": "passive_aggression",
+    "target": 70
+  },
+  {
+    "id": "meeting-direct-95",
+    "split": "eval",
+    "source": "We need to talk about the meeting.",
+    "dimension": "directness",
+    "target": 95
+  },
+  {
+    "id": "tea-whimsy-90",
+    "split": "eval",
+    "source": "Your tea is ready.",
+    "dimension": "whimsy",
+    "target": 90
+  },
+  {
+    "id": "tea-understated-10",
+    "split": "eval",
+    "source": "Your tea is ready.",
+    "dimension": "drama",
+    "target": 10
+  },
+  {
+    "id": "review-casual-20",
+    "split": "eval",
+    "source": "Please review the document.",
+    "dimension": "formality",
+    "target": 20
+  }
+]

@@ -17,6 +17,7 @@ export interface ToneResponse {
   models: {
     writer: string;
     scorer: string | null;
+    prompt_program?: string;
   };
   inspection?: {
     model_calls?: unknown[];

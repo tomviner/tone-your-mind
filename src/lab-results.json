@@ -1,0 +1,90 @@
+{
+  "run": "2026-09-24-dspy-miprov2-round-2",
+  "generated_at": "2026-09-23T23:27:54+00:00",
+  "dataset": "lab/dataset.json",
+  "optimizer": "DSPy MIPROv2",
+  "models": {
+    "writer": "@cf/ibm-granite/granite-4.0-h-micro",
+    "judge": "typesafe/jev"
+  },
+  "weights": {
+    "tone": 85,
+    "meaning": 15
+  },
+  "trial_count": 5,
+  "baseline_metric": 59.8,
+  "candidate_metric": 61.2,
+  "selected_metric": 61.2,
+  "selected": "candidate",
+  "selected_instruction": "Revise the given source sentence to match the specified sentiment level on the tone scale, ensuring the message remains clear and conveys the intended practical meaning without exaggeration. Aim for the exact target sentiment, focusing on tone accuracy. Return only the revised message. Never mention a score, percentage, rating, slider, Jev, rubric, prompt, feedback, attempt, multiplier, or editing process.",
+  "examples": [
+    {
+      "id": "document-passive-70",
+      "source": "I have updated the shared document.",
+      "dimension": "Passive aggression",
+      "target": 70.0,
+      "output": "I have updated the shared document; I hope you don't mind its new arrangement.",
+      "score": 29.0,
+      "distance": 41.0,
+      "meaning": 96.0,
+      "metric": 44.0
+    },
+    {
+      "id": "meeting-direct-95",
+      "source": "We need to talk about the meeting.",
+      "dimension": "Directness",
+      "target": 95.0,
+      "output": "We need to discuss the meeting directly, addressing all necessary points promptly.",
+      "score": 88.8,
+      "distance": 6.2,
+      "meaning": 94.0,
+      "metric": 88.8
+    },
+    {
+      "id": "tea-whimsy-90",
+      "source": "Your tea is ready.",
+      "dimension": "Whimsy",
+      "target": 90.0,
+      "output": "Prepare your tea while the world spins whimsically around us, a delightful surprise in every sip.",
+      "score": 67.2,
+      "distance": 22.8,
+      "meaning": 43.0,
+      "metric": 57.2
+    },
+    {
+      "id": "tea-understated-10",
+      "source": "Your tea is ready.",
+      "dimension": "Drama",
+      "target": 10.0,
+      "output": "Your tea is ready.",
+      "score": 0.0,
+      "distance": 10.0,
+      "meaning": 99.0,
+      "metric": 83.7
+    },
+    {
+      "id": "review-casual-20",
+      "source": "Please review the document.",
+      "dimension": "Formality",
+      "target": 20.0,
+      "output": "Kindly examine the document.",
+      "score": 74.2,
+      "distance": 54.2,
+      "meaning": 98.0,
+      "metric": 32.5
+    }
+  ],
+  "method_note": "Fixed examples only; Jev scored tone and meaning in one review. No user text or production logs were used.",
+  "rounds": [
+    {
+      "label": "Round 1",
+      "metric": 81.2,
+      "outcome": "Rejected despite a higher average: its instruction assumed the high end and missed the 10% panic case by 36.5 points."
+    },
+    {
+      "label": "Round 2",
+      "metric": 61.2,
+      "outcome": "Added low-end examples and squared the distance reward so large misses hurt more. This is the deployed program."
+    }
+  ]
+}

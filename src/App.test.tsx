@@ -92,6 +92,31 @@ afterEach(() => {
 });
 
 describe("tone your mind", () => {
+  test("publishes the real DSPy prompt lab at /lab", () => {
+    window.history.replaceState(null, "", "/lab");
+    render(<App />);
+
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: /Teaching a tiny model to hit the dial/i,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("DSPy MIPROv2", { exact: false }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/85%/)).toBeInTheDocument();
+    expect(screen.getByText(/FINAL ATTEMPT/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/What Granite is actually told/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/59.8 → 61.2/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "source" })).toHaveAttribute(
+      "href",
+      "https://github.com/tomviner/tone-your-mind",
+    );
+  });
+
   test("hands the current starting text back to the original game", () => {
     render(<App />);
 

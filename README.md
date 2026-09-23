@@ -5,6 +5,8 @@
 
 **Try it:** [tone-jev.tomv.uk](https://tone-jev.tomv.uk)
 
+**See the prompt lab:** [tone-jev.tomv.uk/lab](https://tone-jev.tomv.uk/lab)
+
 Edit the visible starting text (or pick a random one), choose a tone dimension,
 and turn a 0–100 dial. An inexpensive language model rewrites the text while
 TypeSafe's Jev model scores each attempt. Scored attempts stream into the page
@@ -28,10 +30,17 @@ Writer responses that mention scoring metadata, or introduce numerals absent
 from the starting text, are rejected before they reach Jev or the browser. A
 rejection still consumes one of the bounded writer calls.
 
-Granite is prompted as a constrained tone editor rather than a copywriter. For
-supplied text it must preserve every claim, request, commitment, negation, name,
-number, date, condition, and action, changing only tone-bearing wording. This
-reduces semantic drift but cannot guarantee that meaning survives a rewrite.
+The deployed instruction is compiled in the public DSPy prompt lab. Tone
+accuracy is weighted at 85%; Jev's probability that the core proposition
+survived contributes the remaining 15%. This makes hitting the dial the primary
+objective while still discouraging gratuitous semantic drift. Jev measures the
+wording, but it does not guarantee the meaning is maintained.
+
+After each miss, one of five distance bands tells Granite how hard to correct.
+The retry number adds a second multiplier: the first correction is firm, the
+second emphatic, and the final one deliberately melodramatic, superlative, and
+insistent. These are private instructions; output that mentions scores or the
+editing machinery is rejected.
 
 A source-based run therefore makes at most three writer calls and four Jev
 calls. A blank-source run makes at most four of each. Writer output is capped at
@@ -62,6 +71,31 @@ API** section shows the exact browser request, the ordered Granite and Jev model
 inputs, normalized model responses, Jev's full per-level probability feedback,
 and the complete API response. Its log lives only in the current browser
 session. The interface is deliberately honest about near misses.
+
+## Prompt lab
+
+[`/lab`](https://tone-jev.tomv.uk/lab) publishes the selected system
+instruction, all five live feedback bands, retry escalation, fixed held-out
+examples, and the actual optimisation outcome—including misses. Production
+imports `worker/prompt_program.json`, the same versioned artifact shown by the
+lab; it does not maintain a hidden second prompt.
+
+The offline compiler uses DSPy MIPROv2 with Granite as both task and prompt
+model. Jev reviews each candidate with two questions in one call: the requested
+tone as a five-anchor score, and meaning retention as a Noul probability. Large
+tone misses are squared so one severe failure matters more than several small
+gains. Only `lab/dataset.json` is used; user text and production logs are never
+training data.
+
+To reproduce and publish a five-trial run:
+
+```bash
+export CLOUDFLARE_ACCOUNT_ID=…
+export CLOUDFLARE_API_TOKEN=…
+# Optional; defaults to the account's `default` AI Gateway.
+export CLOUDFLARE_AI_GATEWAY_ID=…
+uv run --group lab python -m lab.optimize --trials 5 --publish
+```
 
 ## Development
 
