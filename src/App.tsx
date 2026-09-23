@@ -17,6 +17,10 @@ const SESSION_STORAGE_KEY = "tone-jev-session";
 const SESSION_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;
 const MAX_API_LOG_ENTRIES = 20;
 const DEFAULT_SOURCE = "Please read the manual.";
+const GRANITE_MODEL_URL =
+  "https://developers.cloudflare.com/workers-ai/models/granite-4.0-h-micro/";
+const JEV_MODEL_URL =
+  "https://developers.cloudflare.com/ai/models/typesafe/jev/";
 const STARTING_TEXTS = [
   DEFAULT_SOURCE,
   "The meeting starts at nine.",
@@ -392,7 +396,26 @@ function ToneTool() {
           <a className="wordmark" href="/" aria-label="tone your mind home">
             tone your mind<span>.</span>
           </a>
-          <span className="model-credit">Granite writes · Jev scores</span>
+          <span className="model-credit">
+            <a
+              className="model-link"
+              href={GRANITE_MODEL_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Granite
+            </a>{" "}
+            writes ·{" "}
+            <a
+              className="model-link"
+              href={JEV_MODEL_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Jev
+            </a>{" "}
+            scores
+          </span>
         </div>
         <a className="sibling-link" href={siblingUrl}>
           <span aria-hidden="true">← </span>mind your tone
@@ -593,7 +616,26 @@ function ToneTool() {
       )}
 
       <footer className="site-footer">
-        <span>Granite writes · TypeSafe Jev scores · nothing is saved</span>
+        <span>
+          <a
+            className="model-link"
+            href={GRANITE_MODEL_URL}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Granite
+          </a>{" "}
+          writes · TypeSafe{" "}
+          <a
+            className="model-link"
+            href={JEV_MODEL_URL}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Jev
+          </a>{" "}
+          scores · nothing is saved
+        </span>
         <div className="footer-actions">
           <a href="/lab">prompt lab</a>
           <a

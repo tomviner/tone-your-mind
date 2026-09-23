@@ -186,14 +186,36 @@ describe("tone your mind", () => {
     expect(url.hash).toBe("");
   });
 
-  test("credits Jev's role beside the game name", () => {
+  test("links the writer and scorer credits to their model documentation", () => {
     render(<App />);
 
-    expect(
-      within(screen.getByRole("banner")).getByText(
-        "Granite writes · Jev scores",
-      ),
-    ).toBeInTheDocument();
+    const header = within(screen.getByRole("banner"));
+    const footer = within(screen.getByRole("contentinfo"));
+    const graniteLinks = [
+      header.getByRole("link", { name: "Granite" }),
+      footer.getByRole("link", { name: "Granite" }),
+    ];
+    const jevLinks = [
+      header.getByRole("link", { name: "Jev" }),
+      footer.getByRole("link", { name: "Jev" }),
+    ];
+
+    for (const link of graniteLinks) {
+      expect(link).toHaveAttribute(
+        "href",
+        "https://developers.cloudflare.com/workers-ai/models/granite-4.0-h-micro/",
+      );
+      expect(link).toHaveAttribute("target", "_blank");
+      expect(link).toHaveAttribute("rel", "noreferrer");
+    }
+    for (const link of jevLinks) {
+      expect(link).toHaveAttribute(
+        "href",
+        "https://developers.cloudflare.com/ai/models/typesafe/jev/",
+      );
+      expect(link).toHaveAttribute("target", "_blank");
+      expect(link).toHaveAttribute("rel", "noreferrer");
+    }
   });
 
   test("leads with the inverse action instead of the internal tone JEV name", () => {
@@ -235,9 +257,9 @@ describe("tone your mind", () => {
     expect(
       screen.queryByRole("link", { name: /github repo/i }),
     ).not.toBeInTheDocument();
-    expect(
-      within(screen.getByRole("contentinfo")).getByText(/Granite writes/i),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("contentinfo")).toHaveTextContent(
+      "Granite writes · TypeSafe Jev scores · nothing is saved",
+    );
   });
 
   test("picks a different visible starting text", () => {
