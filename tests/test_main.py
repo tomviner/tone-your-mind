@@ -2,7 +2,12 @@ import json
 import unittest
 from types import SimpleNamespace
 
-from worker.tone_http import api_dispatch, response_headers
+from worker.tone_http import (
+    api_dispatch,
+    response_headers,
+    stream_response_headers,
+    wants_stream,
+)
 
 
 class FakeHeaders(dict):
@@ -190,6 +195,27 @@ class HttpBoundaryTests(unittest.IsolatedAsyncioTestCase):
             },
         )
         json.dumps(response_headers())
+
+    def test_streaming_is_explicit_and_ndjson_is_private(self):
+        request = valid_request(
+            headers={
+                "origin": "https://tone-jev.tomv.uk",
+                "x-tone-session": "123e4567-e89b-12d3-a456-426614174000",
+                "accept": "application/x-ndjson",
+            }
+        )
+
+        self.assertTrue(wants_stream(request))
+        self.assertFalse(wants_stream(valid_request()))
+        self.assertEqual(
+            stream_response_headers(),
+            {
+                "cache-control": "no-store",
+                "content-type": "application/x-ndjson; charset=utf-8",
+                "x-accel-buffering": "no",
+                "x-content-type-options": "nosniff",
+            },
+        )
 
 
 if __name__ == "__main__":

@@ -63,6 +63,11 @@ class ToneContractTests(unittest.TestCase):
         self.assertIn("Attempt 1 (score 0.50): Please read the manual.", prompt)
         self.assertIn("Attempt 2 (score 1.60): Read it soon.", prompt)
         self.assertIn("240 characters", prompt)
+        system = result["messages"][0]["content"]
+        self.assertIn("constrained tone editor, not a copywriter", system)
+        self.assertIn("preserve every factual claim, request, commitment", system)
+        self.assertIn("negation, name, number, date, condition, and action", system)
+        self.assertIn("Change only tone-bearing wording", system)
 
     def test_writer_response_removes_common_wrappers_but_rejects_bad_output(self):
         self.assertEqual(
@@ -209,6 +214,7 @@ class ToneRequestTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_blank_source_generates_then_scores_and_stops_on_hit(self):
         calls = []
+        events = []
 
         async def run(model, value):
             calls.append((model, value))
@@ -221,6 +227,7 @@ class ToneRequestTests(unittest.IsolatedAsyncioTestCase):
             "https://tone-jev.tomv.uk/api/tone",
             None,
             run,
+            events.append,
         )
 
         self.assertEqual(status, 200)
@@ -230,6 +237,38 @@ class ToneRequestTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(payload["hit"])
         self.assertEqual([model for model, _ in calls], [WRITER_MODEL, "typesafe/jev"])
         self.assertEqual(calls[0][1]["messages"][-1]["content"].count("Attempt"), 0)
+        self.assertEqual(
+            events,
+            [
+                {
+                    "type": "attempt",
+                    "attempt": {
+                        "phrase": "Where is the emergency manual?!",
+                        "score": 62.5,
+                        "confidence": 0.9,
+                    },
+                }
+            ],
+        )
+        self.assertEqual(
+            payload["inspection"]["model_calls"],
+            [
+                {
+                    "kind": "writer",
+                    "request": {"model": WRITER_MODEL, "input": calls[0][1]},
+                    "response": {"phrase": "Where is the emergency manual?!"},
+                },
+                {
+                    "kind": "scorer",
+                    "request": {"model": "typesafe/jev", "input": calls[1][1]},
+                    "response": {
+                        "model": "jev-1.13.0",
+                        "score": 2.5,
+                        "confidence": 0.9,
+                    },
+                },
+            ],
+        )
 
     async def test_uses_full_history_and_returns_closest_after_attempt_cap(self):
         writer_phrases = iter(["candidate one", "candidate two", "candidate three"])

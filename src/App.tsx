@@ -1,17 +1,29 @@
 import {
   type CSSProperties,
   type FormEvent,
+  useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 
+import ApiInspector, { type ApiLogEntry } from "./ApiInspector";
 import { DIMENSIONS, DIMENSION_KEYS, type DimensionKey } from "./dimensions";
-import type { ToneResponse } from "./types";
+import type { ToneAttempt, ToneResponse } from "./types";
 
 const MAX_SOURCE_LENGTH = 240;
 const SESSION_STORAGE_KEY = "tone-jev-session";
 const SESSION_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;
+const MAX_API_LOG_ENTRIES = 20;
+const DEFAULT_SOURCE = "Please read the manual.";
+const STARTING_TEXTS = [
+  DEFAULT_SOURCE,
+  "The meeting starts at nine.",
+  "Could you put the bins out?",
+  "We need to talk about the spreadsheet.",
+  "Your parcel is behind the shed.",
+  "I have updated the shared document.",
+] as const;
 
 const sessionId = (): string => {
   const stored = window.localStorage.getItem(SESSION_STORAGE_KEY);
@@ -36,6 +48,44 @@ const isPercentage = (value: unknown): value is number =>
   Number.isFinite(value) &&
   value >= 0 &&
   value <= 100;
+
+const isToneAttempt = (value: unknown): value is ToneAttempt =>
+  isRecord(value) &&
+  typeof value.phrase === "string" &&
+  Boolean(value.phrase.trim()) &&
+  value.phrase.length <= MAX_SOURCE_LENGTH &&
+  isPercentage(value.score) &&
+  (value.confidence === null || typeof value.confidence === "number");
+
+const readNdjson = async (
+  response: Response,
+  onEvent: (event: Record<string, unknown>) => void,
+): Promise<Record<string, unknown>[]> => {
+  if (!response.body) throw new Error("The tone stream was empty");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const events: Record<string, unknown>[] = [];
+  let buffer = "";
+
+  const consume = (line: string) => {
+    if (!line.trim()) return;
+    const event: unknown = JSON.parse(line);
+    if (!isRecord(event)) throw new Error("The tone stream was invalid");
+    events.push(event);
+    onEvent(event);
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    lines.forEach(consume);
+    if (done) break;
+  }
+  consume(buffer);
+  return events;
+};
 
 const isToneResponse = (value: unknown): value is ToneResponse => {
   if (!isRecord(value) || !Array.isArray(value.attempts)) return false;
@@ -69,7 +119,7 @@ const isToneResponse = (value: unknown): value is ToneResponse => {
 };
 
 export default function App() {
-  const [source, setSource] = useState("");
+  const [source, setSource] = useState(DEFAULT_SOURCE);
   const [dimensionKey, setDimensionKey] = useState<DimensionKey>("panic");
   const [target, setTarget] = useState(60);
   const [result, setResult] = useState<ToneResponse | null>(null);
@@ -78,7 +128,14 @@ export default function App() {
     "Set the dial. Granite writes; Jev judges.",
   );
   const [error, setError] = useState<string | null>(null);
+  const [apiInspectorOpen, setApiInspectorOpen] = useState(
+    () => window.location.hash === "#inspect-api",
+  );
+  const [apiLog, setApiLog] = useState<ApiLogEntry[]>([]);
+  const [streamAttempts, setStreamAttempts] = useState<ToneAttempt[]>([]);
   const sourceRef = useRef<HTMLTextAreaElement>(null);
+  const inspectApiLinkRef = useRef<HTMLAnchorElement>(null);
+  const apiRequestIdRef = useRef(0);
   const dimension = DIMENSIONS[dimensionKey];
   const sortedDimensions = useMemo(
     () =>
@@ -88,25 +145,118 @@ export default function App() {
     [],
   );
 
+  useEffect(() => {
+    const syncInspectorToHash = () => {
+      setApiInspectorOpen(window.location.hash === "#inspect-api");
+    };
+    window.addEventListener("hashchange", syncInspectorToHash);
+    return () => window.removeEventListener("hashchange", syncInspectorToHash);
+  }, []);
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (loading) return;
 
     setLoading(true);
     setError(null);
+    setStreamAttempts([]);
     setMessage("Granite writes. Jev judges. The loop tightens.");
+    const requestBody = { source, dimension: dimensionKey, target };
+    const requestId = ++apiRequestIdRef.current;
+    setApiLog((current) => [
+      ...current.slice(-(MAX_API_LOG_ENTRIES - 1)),
+      { id: requestId, request: requestBody, status: "pending" },
+    ]);
+    let responseStatus: number | undefined;
 
     try {
       const response = await fetch("/api/tone", {
         method: "POST",
         headers: {
+          accept: "application/x-ndjson",
           "content-type": "application/json",
           "x-tone-session": sessionId(),
         },
-        body: JSON.stringify({ source, dimension: dimensionKey, target }),
+        body: JSON.stringify(requestBody),
       });
-      const body: unknown = await response.json();
-      if (!response.ok) {
+      responseStatus = response.status;
+      let body: unknown;
+      let inspectedResponse: unknown;
+      if (
+        response.headers.get("content-type")?.includes("application/x-ndjson")
+      ) {
+        let finalEvent: Record<string, unknown> | undefined;
+        const events = await readNdjson(response, (streamEvent) => {
+          if (
+            streamEvent.type === "attempt" &&
+            isToneAttempt(streamEvent.attempt)
+          ) {
+            setStreamAttempts((current) => [
+              ...current,
+              streamEvent.attempt as ToneAttempt,
+            ]);
+          }
+          if (streamEvent.type === "complete" || streamEvent.type === "error") {
+            finalEvent = streamEvent;
+          }
+        });
+        inspectedResponse = events;
+        if (!finalEvent) throw new Error("The tone stream ended early");
+        responseStatus =
+          typeof finalEvent.status === "number" ? finalEvent.status : 502;
+        body =
+          finalEvent.type === "complete"
+            ? finalEvent.result
+            : {
+                error:
+                  typeof finalEvent.error === "string"
+                    ? finalEvent.error
+                    : "The tone loop lost the plot",
+              };
+      } else {
+        try {
+          body = await response.json();
+          inspectedResponse = body;
+        } catch {
+          setApiLog((current) =>
+            current.map((entry) =>
+              entry.id === requestId
+                ? {
+                    ...entry,
+                    httpStatus: response.status,
+                    response: { error: "Response was not valid JSON." },
+                    status: "error",
+                  }
+                : entry,
+            ),
+          );
+          throw new Error("The tone loop returned invalid JSON");
+        }
+      }
+      const finalStatus = responseStatus ?? response.status;
+      const inspection = isRecord(body) ? body.inspection : undefined;
+      const modelCalls = isRecord(inspection)
+        ? inspection.model_calls
+        : undefined;
+      setApiLog((current) =>
+        current.map((entry) =>
+          entry.id === requestId
+            ? {
+                ...entry,
+                httpStatus: finalStatus,
+                response: inspectedResponse,
+                modelCalls: Array.isArray(modelCalls) ? modelCalls : undefined,
+                status:
+                  finalStatus >= 200 &&
+                  finalStatus < 300 &&
+                  isToneResponse(body)
+                    ? "complete"
+                    : "error",
+              }
+            : entry,
+        ),
+      );
+      if (finalStatus < 200 || finalStatus >= 300) {
         const responseError =
           isRecord(body) && typeof body.error === "string" ? body.error : null;
         throw new Error(responseError || "The tone loop lost the plot");
@@ -122,6 +272,18 @@ export default function App() {
           : "Closest attempt kept. The dial and the judge disagreed.",
       );
     } catch (caught) {
+      setApiLog((current) =>
+        current.map((entry) =>
+          entry.id === requestId && entry.status === "pending"
+            ? {
+                ...entry,
+                httpStatus: responseStatus,
+                response: { error: "Network request failed." },
+                status: "error",
+              }
+            : entry,
+        ),
+      );
       const nextError =
         caught instanceof Error
           ? caught.message
@@ -148,6 +310,27 @@ export default function App() {
     setSource(result.phrase);
     setMessage("Result loaded as the next starting text.");
     sourceRef.current?.focus();
+  };
+
+  const pickRandomSource = () => {
+    const choices = STARTING_TEXTS.filter((value) => value !== source);
+    setSource(
+      choices[Math.floor(Math.random() * choices.length)] ?? DEFAULT_SOURCE,
+    );
+    setMessage("Fresh starting text.");
+    sourceRef.current?.focus();
+  };
+
+  const closeApiInspector = () => {
+    setApiInspectorOpen(false);
+    if (window.location.hash === "#inspect-api") {
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}`,
+      );
+    }
+    inspectApiLinkRef.current?.focus();
   };
 
   return (
@@ -177,7 +360,18 @@ export default function App() {
         <div className="source-field">
           <div className="field-heading">
             <label htmlFor="source">Starting text</label>
-            <span>{source.length}/240</span>
+            <div className="field-tools">
+              <button
+                className="random-source"
+                type="button"
+                onClick={pickRandomSource}
+                disabled={loading}
+                aria-label="Pick random text"
+              >
+                random ↻
+              </button>
+              <span>{source.length}/240</span>
+            </div>
           </div>
           <textarea
             id="source"
@@ -190,7 +384,7 @@ export default function App() {
             disabled={loading}
           />
           <p className="field-note">
-            Optional—leave it blank and the machine invents something to tone.
+            Edit this starting point, or pick another one.
           </p>
         </div>
 
@@ -257,6 +451,33 @@ export default function App() {
             )}
           </aside>
         )}
+
+        {loading && streamAttempts.length > 0 && (
+          <section className="live-loop" aria-label="Live tone attempts">
+            <p className="live-loop-heading">Jev scores so far</p>
+            <ol>
+              {streamAttempts.map((attempt, index) => (
+                <li key={`${index}-${attempt.phrase}`}>
+                  <div className="live-attempt-heading">
+                    <span>attempt {index + 1}</span>
+                    <strong>{scoreText(attempt.score)}%</strong>
+                  </div>
+                  <div
+                    className="live-score"
+                    role="progressbar"
+                    aria-label={`Attempt ${index + 1}, ${scoreText(attempt.score)}% ${dimension.name}`}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={attempt.score}
+                  >
+                    <span style={{ width: `${attempt.score}%` }} />
+                  </div>
+                  <p>{attempt.phrase}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
       </form>
 
       {result && (
@@ -315,19 +536,38 @@ export default function App() {
 
       <aside className="reality-check">
         <strong>Check before sending.</strong> The writer can change meaning as
-        well as tone. Jev measures a rubric; it does not know your relationship.
+        well as tone. Jev measures the wording, but it doesn’t guarantee the
+        meaning is maintained.
       </aside>
 
       <footer className="site-footer">
         <span>Granite writes · TypeSafe Jev scores · nothing is saved</span>
-        <a
-          href="https://github.com/tomviner/tone-your-mind"
-          target="_blank"
-          rel="noreferrer"
-        >
-          GitHub repo <span aria-hidden="true">↗</span>
-        </a>
+        <div className="footer-actions">
+          <a
+            href="#inspect-api"
+            className="text-button"
+            ref={inspectApiLinkRef}
+            onClick={() => setApiInspectorOpen(true)}
+          >
+            inspect API
+          </a>
+          <a
+            href="https://github.com/tomviner/tone-your-mind"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub repo <span aria-hidden="true">↗</span>
+          </a>
+        </div>
       </footer>
+
+      {apiInspectorOpen && (
+        <ApiInspector
+          entries={apiLog}
+          onClear={() => setApiLog([])}
+          onClose={closeApiInspector}
+        />
+      )}
     </main>
   );
 }

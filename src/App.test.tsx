@@ -34,6 +34,26 @@ const resultBody = {
     writer: "@cf/ibm-granite/granite-4.0-h-micro",
     scorer: "jev-1.13.0",
   },
+  inspection: {
+    model_calls: [
+      {
+        kind: "writer",
+        request: {
+          model: "@cf/ibm-granite/granite-4.0-h-micro",
+          input: { messages: [{ role: "user", content: "Rewrite this." }] },
+        },
+        response: { phrase: "Please read the manual right now." },
+      },
+      {
+        kind: "scorer",
+        request: {
+          model: "typesafe/jev",
+          input: { state: "Please read the manual right now." },
+        },
+        response: { model: "jev-1.13.0", score: 2.5, confidence: 0.88 },
+      },
+    ],
+  },
 };
 
 const prepareSession = () => {
@@ -54,6 +74,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   window.localStorage.clear();
+  window.history.replaceState(null, "", "/");
 });
 
 describe("tone JEV", () => {
@@ -74,10 +95,28 @@ describe("tone JEV", () => {
       "maxlength",
       "240",
     );
-    expect(screen.getByText(/leave it blank/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/starting text/i)).toHaveValue(
+      "Please read the manual.",
+    );
+    expect(
+      screen.getByRole("button", { name: /random text/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/doesn’t guarantee the meaning is maintained/i),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /github repo/i })).toHaveAttribute(
       "href",
       "https://github.com/tomviner/tone-your-mind",
+    );
+  });
+
+  test("picks a different visible starting text", () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: /random text/i }));
+
+    expect(screen.getByLabelText(/starting text/i)).not.toHaveValue(
+      "Please read the manual.",
     );
   });
 
@@ -114,6 +153,7 @@ describe("tone JEV", () => {
     expect(url).toBe("/api/tone");
     expect(init?.method).toBe("POST");
     expect(init?.headers).toEqual({
+      accept: "application/x-ndjson",
       "content-type": "application/json",
       "x-tone-session": SESSION,
     });
@@ -145,6 +185,87 @@ describe("tone JEV", () => {
     expect(within(result).getAllByRole("listitem")).toHaveLength(2);
     expect(within(result).getByText("attempt 1 · 12.5%")).toBeInTheDocument();
     expect(within(result).getByText("attempt 2 · 62.5%")).toBeInTheDocument();
+  });
+
+  test("opens an inspector showing the real API, Granite, and Jev exchanges", async () => {
+    prepareSession();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json(resultBody)),
+    );
+    render(<App />);
+    typeSource();
+    submit();
+    await screen.findByText(resultBody.phrase);
+
+    fireEvent.click(screen.getByRole("link", { name: /inspect api/i }));
+
+    const inspector = screen.getByRole("region", { name: /api inspector/i });
+    expect(within(inspector).getByText("POST /api/tone")).toBeInTheDocument();
+    expect(within(inspector).getByText("Browser request")).toBeInTheDocument();
+    expect(within(inspector).getByText("Granite request")).toBeInTheDocument();
+    expect(within(inspector).getByText("Granite response")).toBeInTheDocument();
+    expect(within(inspector).getByText("Jev request")).toBeInTheDocument();
+    expect(within(inspector).getByText("Jev response")).toBeInTheDocument();
+    expect(within(inspector).getByText("API response")).toBeInTheDocument();
+    expect(within(inspector).getAllByText(/typesafe\/jev/)).not.toHaveLength(0);
+    expect(
+      within(inspector).getAllByText(/granite-4\.0-h-micro/),
+    ).not.toHaveLength(0);
+  });
+
+  test("shows each streamed score before the final result arrives", async () => {
+    prepareSession();
+    const encoder = new TextEncoder();
+    let finishStream: (() => void) | undefined;
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(
+          encoder.encode(
+            `${JSON.stringify({
+              type: "attempt",
+              attempt: {
+                phrase: "Please read the manual.",
+                score: 12.5,
+                confidence: 0.91,
+              },
+            })}\n`,
+          ),
+        );
+        finishStream = () => {
+          controller.enqueue(
+            encoder.encode(
+              `${JSON.stringify({ type: "complete", status: 200, result: resultBody })}\n`,
+            ),
+          );
+          controller.close();
+        };
+      },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Promise.resolve(
+          new Response(stream, {
+            headers: { "content-type": "application/x-ndjson" },
+          }),
+        ),
+      ),
+    );
+    render(<App />);
+
+    submit();
+
+    const progress = await screen.findByRole("progressbar", {
+      name: /attempt 1.*12.5% panic/i,
+    });
+    expect(progress).toHaveAttribute("aria-valuenow", "12.5");
+    expect(screen.queryByRole("region", { name: /toned result/i })).toBeNull();
+
+    finishStream?.();
+    expect(
+      await screen.findByRole("region", { name: /toned result/i }),
+    ).toBeInTheDocument();
   });
 
   test("copies and reuses the best result", async () => {

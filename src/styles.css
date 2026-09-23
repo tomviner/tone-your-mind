@@ -230,6 +230,28 @@ summary:focus-visible {
   font-weight: 800;
 }
 
+.field-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.random-source {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  padding: 2px;
+  font-size: 0.74rem;
+  font-weight: 850;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.random-source:disabled {
+  cursor: wait;
+  opacity: 0.45;
+}
+
 textarea,
 select {
   width: 100%;
@@ -418,6 +440,70 @@ input[type="range"]::-moz-range-thumb {
   font-size: 0.82rem;
 }
 
+.live-loop {
+  margin-top: 22px;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  color: var(--muted);
+}
+
+.live-loop-heading {
+  margin: 0 0 10px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.live-loop ol {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.live-loop li {
+  border-radius: 9px;
+  background: #eceeea;
+  padding: 11px 12px;
+  opacity: 0.78;
+}
+
+.live-attempt-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.live-score {
+  height: 7px;
+  overflow: hidden;
+  margin: 7px 0;
+  border-radius: 999px;
+  background: #d3d6d1;
+}
+
+.live-score span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #909791;
+  transition: width 180ms ease;
+}
+
+.live-loop li p {
+  margin: 0;
+  color: #606761;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
 .result-card {
   margin-top: 34px;
   padding: clamp(20px, 5vw, 38px);
@@ -572,6 +658,134 @@ blockquote {
   font-size: 0.72rem;
 }
 
+.footer-actions,
+.api-inspector-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.text-button {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  padding: 2px;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.api-inspector {
+  margin-top: 18px;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: var(--paper);
+  box-shadow: 5px 5px 0 var(--ink);
+  padding: clamp(18px, 4vw, 28px);
+}
+
+.api-inspector-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.api-inspector-heading h2 {
+  margin: 4px 0 0;
+  font-size: clamp(1.65rem, 6vw, 2.4rem);
+  letter-spacing: -0.055em;
+}
+
+.api-inspector-note,
+.api-empty p {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.api-log {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.api-entry {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
+}
+
+.api-entry summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+  padding: 12px 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.api-status {
+  color: var(--mint-dark);
+}
+
+.api-status.is-error {
+  color: var(--coral-dark);
+}
+
+.api-status.is-pending {
+  color: var(--lilac);
+}
+
+.api-entry-body {
+  border-top: 1px solid var(--line);
+  padding: 4px 14px 14px;
+}
+
+.api-entry-body h3 {
+  margin: 14px 0 6px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.model-call {
+  margin-top: 16px;
+  border-top: 2px solid var(--line);
+  padding-top: 4px;
+}
+
+.model-call-number {
+  margin: 10px 0 0;
+  color: var(--coral-dark);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.api-inspector pre {
+  max-width: 100%;
+  overflow: auto;
+  margin: 0;
+  border-radius: 7px;
+  background: #292821;
+  color: #fffaf0;
+  padding: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 650px) {
   .controls-grid {
     grid-template-columns: 1fr;
@@ -632,6 +846,16 @@ blockquote {
   .site-footer {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .api-inspector-heading {
+    flex-direction: column;
+  }
+
+  .footer-actions,
+  .api-inspector-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 

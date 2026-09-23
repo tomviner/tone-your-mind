@@ -16,6 +16,7 @@ MAX_PHRASE_LENGTH = 240
 TARGET_TOLERANCE = 0.2
 
 AiRunner = Callable[[str, dict[str, Any]], Awaitable[Any]]
+EventEmitter = Callable[[dict[str, Any]], None]
 
 
 def _field(value: Any, key: str) -> Any:
@@ -118,9 +119,12 @@ def build_writer_input(
             {
                 "role": "system",
                 "content": (
-                    "You are a precise rewriting engine. Adjust tone without adding "
-                    "facts, names, dates, threats, or instructions absent from "
-                    "the source."
+                    "You are a constrained tone editor, not a copywriter. When a "
+                    "source is supplied, preserve every factual claim, request, "
+                    "commitment, negation, name, number, date, condition, and action. "
+                    "Change only tone-bearing wording. Do not add, remove, weaken, "
+                    "strengthen, or reinterpret meaning. Never add facts, names, "
+                    "dates, threats, promises, or instructions absent from the source."
                 ),
             },
             {"role": "user", "content": "\n".join(user_parts)},
@@ -196,6 +200,7 @@ async def tone_request(
     request_url: str,
     origin: str | None,
     run_ai: AiRunner,
+    emit: EventEmitter | None = None,
 ) -> tuple[dict[str, Any], int]:
     if origin:
         try:
@@ -212,16 +217,29 @@ async def tone_request(
     target_percent = float(body["target"])
     target_score = target_percent / 25
     attempts: list[dict[str, Any]] = []
+    model_calls: list[dict[str, Any]] = []
     scorer_model = None
     stage = "setup"
     failure_meta: dict[str, Any] = {}
 
     async def score_phrase(phrase: str) -> None:
         nonlocal scorer_model, stage
+        jev_input = build_jev_input(phrase, dimension)
+        inspection = {
+            "kind": "scorer",
+            "request": {"model": JEV_MODEL, "input": jev_input},
+            "response": None,
+        }
+        model_calls.append(inspection)
         stage = "jev_inference"
-        response = await run_ai(JEV_MODEL, build_jev_input(phrase, dimension))
+        response = await run_ai(JEV_MODEL, jev_input)
         stage = "jev_parse"
         jev = score_from_jev_response(response, dimension)
+        inspection["response"] = {
+            "model": jev["model"],
+            "score": jev["score"],
+            "confidence": jev["confidence"],
+        }
         scorer_model = jev["model"] or scorer_model
         attempts.append(
             {
@@ -230,6 +248,17 @@ async def tone_request(
                 "confidence": jev["confidence"],
             }
         )
+        if emit is not None:
+            emit(
+                {
+                    "type": "attempt",
+                    "attempt": {
+                        "phrase": phrase,
+                        "score": round(jev["score"] * 25, 1),
+                        "confidence": jev["confidence"],
+                    },
+                }
+            )
 
     try:
         if source:
@@ -239,6 +268,12 @@ async def tone_request(
             not attempts or abs(attempts[-1]["score"] - target_score) > TARGET_TOLERANCE
         ):
             writer_input = build_writer_input(source, dimension, target_score, attempts)
+            inspection = {
+                "kind": "writer",
+                "request": {"model": WRITER_MODEL, "input": writer_input},
+                "response": None,
+            }
+            model_calls.append(inspection)
             stage = "writer_inference"
             response = await run_ai(WRITER_MODEL, writer_input)
             stage = "writer_parse"
@@ -252,6 +287,7 @@ async def tone_request(
             if isinstance(response_value, str):
                 failure_meta["writer_response_length"] = len(response_value)
             candidate = phrase_from_writer_response(response)
+            inspection["response"] = {"phrase": candidate}
             failure_meta = {}
             await score_phrase(candidate)
     except Exception as error:
@@ -287,4 +323,5 @@ async def tone_request(
         "hit": distance <= 5,
         "attempts": public_attempts,
         "models": {"writer": WRITER_MODEL, "scorer": scorer_model},
+        "inspection": {"model_calls": model_calls},
     }, 200

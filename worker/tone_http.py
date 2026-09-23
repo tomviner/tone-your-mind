@@ -19,6 +19,20 @@ def response_headers() -> dict[str, str]:
     }
 
 
+def stream_response_headers() -> dict[str, str]:
+    return {
+        "cache-control": "no-store",
+        "content-type": "application/x-ndjson; charset=utf-8",
+        "x-accel-buffering": "no",
+        "x-content-type-options": "nosniff",
+    }
+
+
+def wants_stream(request: Any) -> bool:
+    accept = request.headers.get("accept")
+    return isinstance(accept, str) and "application/x-ndjson" in accept.lower()
+
+
 def _same_origin(origin: str | None, request_url: str) -> bool:
     if origin is None:
         return True
@@ -44,7 +58,9 @@ def _limit_succeeded(value: Any) -> bool:
     return getattr(value, "success", False) is True
 
 
-async def api_dispatch(request: Any, env: Any) -> tuple[dict[str, Any], int] | None:
+async def api_dispatch(
+    request: Any, env: Any, emit=None
+) -> tuple[dict[str, Any], int] | None:
     if urlsplit(request.url).path != "/api/tone":
         return None
     if request.method != "POST":
@@ -81,4 +97,4 @@ async def api_dispatch(request: Any, env: Any) -> tuple[dict[str, Any], int] | N
     async def run_ai(model: str, value: dict[str, Any]) -> Any:
         return await env.AI.run(model, value)
 
-    return await tone_request(body, request.url, origin, run_ai)
+    return await tone_request(body, request.url, origin, run_ai, emit)

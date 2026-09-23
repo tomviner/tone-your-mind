@@ -5,9 +5,10 @@
 
 **Try it:** [tone-jev.tomv.uk](https://tone-jev.tomv.uk)
 
-Give it optional starting text, choose a tone dimension, and turn a 0–100 dial.
-An inexpensive language model rewrites the text while TypeSafe's Jev model
-scores each attempt. The closest version wins.
+Edit the visible starting text (or pick a random one), choose a tone dimension,
+and turn a 0–100 dial. An inexpensive language model rewrites the text while
+TypeSafe's Jev model scores each attempt. Scored attempts stream into the page
+as they arrive; the closest version wins.
 
 Panic starts at 60%, because the whole project began with a question:
 
@@ -23,6 +24,11 @@ Panic starts at 60%, because the whole project began with a question:
 4. The loop stops within five percentage points or after four total scores.
 5. The closest attempt is returned, even when none hits the tolerance.
 
+Granite is prompted as a constrained tone editor rather than a copywriter. For
+supplied text it must preserve every claim, request, commitment, negation, name,
+number, date, condition, and action, changing only tone-bearing wording. This
+reduces semantic drift but cannot guarantee that meaning survives a rewrite.
+
 A source-based run therefore makes at most three writer calls and four Jev
 calls. A blank-source run makes at most four of each. Writer output is capped at
 96 tokens and every phrase at 240 characters.
@@ -36,6 +42,9 @@ built. Jev remains the only scoring authority.
 
 - React and Vite render a mobile-first single-dial interface.
 - `POST /api/tone` is a same-origin Python Cloudflare Worker endpoint.
+- Clients receive ordinary JSON by default. The browser requests
+  `application/x-ndjson`, so the Worker streams one scored-attempt event at a
+  time followed by the same final result in a completion event.
 - The Worker uses the native Workers AI binding for both Granite and
   `typesafe/jev`; there are no API keys in application code.
 - Native Cloudflare bindings allow six requests per browser session and thirty
@@ -44,8 +53,11 @@ built. Jev remains the only scoring authority.
   phrases, generations, accounts, history, or analytics.
 
 The response includes the winning phrase, requested and measured percentages,
-and the complete attempt trail. The interface is deliberately honest about near
-misses and warns that AI can alter meaning as well as tone.
+the complete attempt trail, and an inspection trace. The expandable **inspect
+API** section shows the exact browser request, the ordered Granite and Jev model
+inputs, normalized model responses, and the complete API response. Its log
+lives only in the current browser session. The interface is deliberately honest
+about near misses and warns that AI can alter meaning as well as tone.
 
 ## Development
 

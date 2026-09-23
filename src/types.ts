@@ -18,4 +18,7 @@ export interface ToneResponse {
     writer: string;
     scorer: string | null;
   };
+  inspection?: {
+    model_calls?: unknown[];
+  };
 }
