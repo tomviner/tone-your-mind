@@ -24,6 +24,10 @@ Panic starts at 60%, because the whole project began with a question:
 4. The loop stops within five percentage points or after four total scores.
 5. The closest attempt is returned, even when none hits the tolerance.
 
+Writer responses that mention scoring metadata, or introduce numerals absent
+from the starting text, are rejected before they reach Jev or the browser. A
+rejection still consumes one of the bounded writer calls.
+
 Granite is prompted as a constrained tone editor rather than a copywriter. For
 supplied text it must preserve every claim, request, commitment, negation, name,
 number, date, condition, and action, changing only tone-bearing wording. This

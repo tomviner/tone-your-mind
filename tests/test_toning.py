@@ -278,6 +278,58 @@ class ToneRequestTests(unittest.IsolatedAsyncioTestCase):
             ],
         )
 
+    async def test_rejects_score_leaks_before_they_are_scored_or_streamed(self):
+        writer_phrases = iter(
+            [
+                (
+                    "Chloe, this is no small matter, like a 0, but a dinner "
+                    "finale, like a 4."
+                ),
+                "Chloe, dinner awaits your most dramatic entrance!",
+            ]
+        )
+        calls = []
+        events = []
+
+        async def run(model, value):
+            calls.append((model, value))
+            if model == WRITER_MODEL:
+                return {"response": next(writer_phrases)}
+            return jev_response(0.2 if len(calls) == 1 else 4.0)
+
+        payload, status = await tone_request(
+            {
+                "source": "Chloe, could you please eat your dinner?",
+                "dimension": "panic",
+                "target": 100,
+            },
+            "https://tone-jev.tomv.uk/api/tone",
+            "https://tone-jev.tomv.uk",
+            run,
+            events.append,
+        )
+
+        self.assertEqual(status, 200)
+        self.assertEqual(
+            payload["phrase"], "Chloe, dinner awaits your most dramatic entrance!"
+        )
+        self.assertNotIn("like a 0", str(payload))
+        self.assertEqual(
+            [model for model, _ in calls],
+            ["typesafe/jev", WRITER_MODEL, WRITER_MODEL, "typesafe/jev"],
+        )
+        self.assertEqual(
+            [event["attempt"]["phrase"] for event in events],
+            [
+                "Chloe, could you please eat your dinner?",
+                "Chloe, dinner awaits your most dramatic entrance!",
+            ],
+        )
+        rejected = payload["inspection"]["model_calls"][1]
+        self.assertEqual(rejected["response"], {"rejected": "score_reference"})
+        retry_prompt = calls[2][1]["messages"][-1]["content"]
+        self.assertIn("A previous answer mentioned scoring metadata", retry_prompt)
+
     async def test_uses_full_history_and_returns_closest_after_attempt_cap(self):
         writer_phrases = iter(["candidate one", "candidate two", "candidate three"])
         jev_scores = iter([0.2, 1.0, 2.0, 1.8])

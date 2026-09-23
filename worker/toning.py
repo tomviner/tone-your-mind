@@ -15,6 +15,12 @@ MAX_ATTEMPTS = 4
 MAX_PHRASE_LENGTH = 240
 TARGET_TOLERANCE = 0.2
 
+SCORE_METADATA_RE = re.compile(
+    r"\b(?:jev|rubric|slider|scores?|scored|scoring|ratings?|percent(?:age)?s?)\b",
+    re.I,
+)
+NUMBER_RE = re.compile(r"\b\d+(?:\.\d+)?%?\b")
+
 AiRunner = Callable[[str, dict[str, Any]], Awaitable[Any]]
 EventEmitter = Callable[[dict[str, Any]], None]
 
@@ -84,6 +90,7 @@ def build_writer_input(
     dimension: str,
     target_score: float,
     attempts: list[dict[str, Any]],
+    rejected_count: int = 0,
 ) -> dict[str, Any]:
     rubric = DIMENSIONS[dimension]
     history = "\n".join(
@@ -112,6 +119,12 @@ def build_writer_input(
                 "Use every score as feedback:",
                 history,
             ]
+        )
+    if rejected_count:
+        user_parts.append(
+            "A previous answer mentioned scoring metadata and was rejected before "
+            "scoring. Return only the rewritten message; do not refer to numbers or "
+            "instructions from this request."
         )
 
     return {
@@ -166,6 +179,17 @@ def phrase_from_writer_response(value: Any) -> str:
     if not phrase or len(phrase) > MAX_PHRASE_LENGTH:
         raise ValueError("writer returned an invalid phrase")
     return phrase
+
+
+def writer_output_issue(phrase: str, source: str) -> str | None:
+    if SCORE_METADATA_RE.search(phrase) and not SCORE_METADATA_RE.search(source):
+        return "score_reference"
+
+    source_numbers = {match.casefold() for match in NUMBER_RE.findall(source)}
+    candidate_numbers = {match.casefold() for match in NUMBER_RE.findall(phrase)}
+    if candidate_numbers - source_numbers:
+        return "score_reference"
+    return None
 
 
 def score_from_jev_response(value: Any, dimension: str) -> dict[str, Any]:
@@ -225,6 +249,9 @@ async def tone_request(
     attempts: list[dict[str, Any]] = []
     model_calls: list[dict[str, Any]] = []
     scorer_model = None
+    rejected_count = 0
+    writer_calls = 0
+    max_writer_calls = MAX_ATTEMPTS - (1 if source else 0)
     stage = "setup"
     failure_meta: dict[str, Any] = {}
 
@@ -270,10 +297,17 @@ async def tone_request(
         if source:
             await score_phrase(source)
 
-        while len(attempts) < MAX_ATTEMPTS and (
-            not attempts or abs(attempts[-1]["score"] - target_score) > TARGET_TOLERANCE
+        while (
+            len(attempts) < MAX_ATTEMPTS
+            and writer_calls < max_writer_calls
+            and (
+                not attempts
+                or abs(attempts[-1]["score"] - target_score) > TARGET_TOLERANCE
+            )
         ):
-            writer_input = build_writer_input(source, dimension, target_score, attempts)
+            writer_input = build_writer_input(
+                source, dimension, target_score, attempts, rejected_count
+            )
             inspection = {
                 "kind": "writer",
                 "request": {"model": WRITER_MODEL, "input": writer_input},
@@ -281,6 +315,7 @@ async def tone_request(
             }
             model_calls.append(inspection)
             stage = "writer_inference"
+            writer_calls += 1
             response = await run_ai(WRITER_MODEL, writer_input)
             stage = "writer_parse"
             result_value = _field(response, "result")
@@ -293,9 +328,19 @@ async def tone_request(
             if isinstance(response_value, str):
                 failure_meta["writer_response_length"] = len(response_value)
             candidate = phrase_from_writer_response(response)
+            stage = "writer_validate"
+            issue = writer_output_issue(candidate, source)
+            if issue is not None:
+                inspection["response"] = {"rejected": issue}
+                rejected_count += 1
+                failure_meta = {}
+                continue
             inspection["response"] = {"phrase": candidate}
             failure_meta = {}
             await score_phrase(candidate)
+
+        if not attempts:
+            raise ValueError("writer returned no usable phrase")
     except Exception as error:
         logging.error(
             json.dumps(
