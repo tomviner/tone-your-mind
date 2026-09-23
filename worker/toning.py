@@ -123,8 +123,12 @@ def build_writer_input(
                     "source is supplied, preserve every factual claim, request, "
                     "commitment, negation, name, number, date, condition, and action. "
                     "Change only tone-bearing wording. Do not add, remove, weaken, "
-                    "strengthen, or reinterpret meaning. Never add facts, names, "
-                    "dates, threats, promises, or instructions absent from the source."
+                    "strengthen, or reinterpret meaning. Semantic fidelity outranks "
+                    "the target score: accept a tone miss rather than invent a reason, "
+                    "consequence, risk, deadline, or circumstance. Never add facts, "
+                    "names, dates, threats, promises, or instructions absent from the "
+                    "source. Before answering, silently compare every clause with the "
+                    "source and remove anything it does not support."
                 ),
             },
             {"role": "user", "content": "\n".join(user_parts)},

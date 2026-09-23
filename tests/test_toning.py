@@ -68,6 +68,9 @@ class ToneContractTests(unittest.TestCase):
         self.assertIn("preserve every factual claim, request, commitment", system)
         self.assertIn("negation, name, number, date, condition, and action", system)
         self.assertIn("Change only tone-bearing wording", system)
+        self.assertIn("Semantic fidelity outranks the target score", system)
+        self.assertIn("reason, consequence, risk, deadline, or circumstance", system)
+        self.assertIn("silently compare every clause", system)
 
     def test_writer_response_removes_common_wrappers_but_rejects_bad_output(self):
         self.assertEqual(
