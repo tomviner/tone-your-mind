@@ -212,6 +212,40 @@ describe("tone your mind", () => {
     expect(within(result).getByText("attempt 2 · 62.5%")).toBeInTheDocument();
   });
 
+  test("grades misses by how far Jev landed from the target", async () => {
+    const cases = [
+      { distance: 12, score: 68, label: "near miss" },
+      { distance: 30, score: 50, label: "not quite" },
+      { distance: 80, score: 0, label: "way off" },
+    ] as const;
+
+    for (const example of cases) {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () =>
+          Response.json({
+            ...resultBody,
+            phrase: `Result ${example.distance} points away.`,
+            target: 80,
+            score: example.score,
+            distance: example.distance,
+            hit: false,
+          }),
+        ),
+      );
+      const view = render(<App />);
+
+      submit();
+
+      const result = await screen.findByRole("region", {
+        name: /toned result/i,
+      });
+      expect(within(result).getByText(example.label)).toBeInTheDocument();
+      view.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
   test("opens an inspector showing the real API, Granite, and Jev exchanges", async () => {
     prepareSession();
     vi.stubGlobal(

@@ -40,6 +40,13 @@ const sessionId = (): string => {
 const scoreText = (value: number): string =>
   Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1);
 
+const verdictText = (result: ToneResponse): string => {
+  if (result.hit) return "hit";
+  if (result.distance <= 15) return "near miss";
+  if (result.distance <= 40) return "not quite";
+  return "way off";
+};
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
@@ -488,7 +495,7 @@ export default function App() {
               <h2>{result.hit ? "Close enough." : "Closest one."}</h2>
             </div>
             <div className={`verdict ${result.hit ? "is-hit" : "is-miss"}`}>
-              {result.hit ? "hit" : "near miss"}
+              {verdictText(result)}
             </div>
           </div>
 
