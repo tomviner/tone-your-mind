@@ -375,7 +375,13 @@ describe("tone your mind", () => {
     expect(button).toBeDisabled();
     fireEvent.click(button);
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect(screen.getByText(/Granite writes.*Jev judges/i)).toBeInTheDocument();
+    const status = screen.getByText("Jev is scoring…");
+    expect(status).toHaveClass("process-status");
+    expect(status).toHaveTextContent("Jev is scoring…");
+    expect(status.querySelector(".status-spinner")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
   });
 
   test("recovers from model errors without replacing an existing result", async () => {

@@ -167,7 +167,7 @@ export default function App() {
     setLoading(true);
     setError(null);
     setStreamAttempts([]);
-    setMessage("Granite writes. Jev judges. The loop tightens.");
+    setMessage("Jev is scoring…");
     const requestBody = { source, dimension: dimensionKey, target };
     const requestId = ++apiRequestIdRef.current;
     setApiLog((current) => [
@@ -446,6 +446,7 @@ export default function App() {
             <span aria-hidden="true"> ←</span>
           </button>
           <p className="process-status" role="status" aria-live="polite">
+            {loading && <span className="status-spinner" aria-hidden="true" />}
             {message}
           </p>
         </div>

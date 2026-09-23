@@ -394,11 +394,31 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .process-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4em;
   margin: 0;
   color: var(--muted);
   font-size: 0.8rem;
   font-weight: 650;
   text-align: right;
+}
+
+.status-spinner {
+  width: 0.8em;
+  height: 0.8em;
+  flex: 0 0 auto;
+  border: 0.12em solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: status-spin 700ms linear infinite;
+}
+
+@keyframes status-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-panel {
@@ -769,6 +789,7 @@ blockquote {
   }
 
   .process-status {
+    justify-content: flex-start;
     text-align: left;
   }
 
