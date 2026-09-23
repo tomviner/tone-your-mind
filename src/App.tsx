@@ -28,6 +28,46 @@ const sessionId = (): string => {
 const scoreText = (value: number): string =>
   Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1);
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isPercentage = (value: unknown): value is number =>
+  typeof value === "number" &&
+  Number.isFinite(value) &&
+  value >= 0 &&
+  value <= 100;
+
+const isToneResponse = (value: unknown): value is ToneResponse => {
+  if (!isRecord(value) || !Array.isArray(value.attempts)) return false;
+  if (
+    typeof value.phrase !== "string" ||
+    !value.phrase.trim() ||
+    value.phrase.length > MAX_SOURCE_LENGTH ||
+    typeof value.dimension !== "string" ||
+    !(value.dimension in DIMENSIONS) ||
+    !isPercentage(value.target) ||
+    !isPercentage(value.score) ||
+    !isPercentage(value.distance) ||
+    typeof value.hit !== "boolean" ||
+    value.attempts.length < 1 ||
+    value.attempts.length > 4
+  ) {
+    return false;
+  }
+
+  return value.attempts.every(
+    (attempt) =>
+      isRecord(attempt) &&
+      typeof attempt.phrase === "string" &&
+      Boolean(attempt.phrase.trim()) &&
+      attempt.phrase.length <= MAX_SOURCE_LENGTH &&
+      isPercentage(attempt.score) &&
+      (attempt.confidence === null ||
+        (typeof attempt.confidence === "number" &&
+          Number.isFinite(attempt.confidence))),
+  );
+};
+
 export default function App() {
   const [source, setSource] = useState("");
   const [dimensionKey, setDimensionKey] = useState<DimensionKey>("panic");
@@ -65,9 +105,14 @@ export default function App() {
         },
         body: JSON.stringify({ source, dimension: dimensionKey, target }),
       });
-      const body = (await response.json()) as ToneResponse & { error?: string };
+      const body: unknown = await response.json();
       if (!response.ok) {
-        throw new Error(body.error || "The tone loop lost the plot");
+        const responseError =
+          isRecord(body) && typeof body.error === "string" ? body.error : null;
+        throw new Error(responseError || "The tone loop lost the plot");
+      }
+      if (!isToneResponse(body)) {
+        throw new Error("The tone loop returned an invalid result");
       }
 
       setResult(body);

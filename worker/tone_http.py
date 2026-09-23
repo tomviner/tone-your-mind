@@ -8,6 +8,7 @@ except ImportError:  # Cloudflare loads modules beside main.py.
     from toning import tone_request
 
 SESSION_PATTERN = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
+MAX_REQUEST_BYTES = 4096
 
 
 def response_headers() -> dict[str, str]:
@@ -48,6 +49,13 @@ async def api_dispatch(request: Any, env: Any) -> tuple[dict[str, Any], int] | N
         return None
     if request.method != "POST":
         return {"error": "Method not allowed"}, 405
+
+    content_length = request.headers.get("content-length")
+    try:
+        if content_length is not None and int(content_length) > MAX_REQUEST_BYTES:
+            return {"error": "Request too large"}, 413
+    except (TypeError, ValueError):
+        return {"error": "Invalid content length"}, 400
 
     try:
         body = await request.json()

@@ -212,6 +212,25 @@ describe("tone JEV", () => {
     expect(screen.getByRole("button", { name: /tone it/i })).not.toBeDisabled();
   });
 
+  test("treats a malformed successful response as a recoverable error", async () => {
+    prepareSession();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ phrase: "missing everything else" })),
+    );
+    render(<App />);
+
+    submit();
+
+    expect(
+      await screen.findByText(/tone loop returned an invalid result/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: /toned result/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /tone it/i })).not.toBeDisabled();
+  });
+
   test("explains rate limiting and makes retry possible", async () => {
     prepareSession();
     vi.stubGlobal(

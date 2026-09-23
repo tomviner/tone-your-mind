@@ -117,6 +117,22 @@ class HttpBoundaryTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(env.AI.calls, [])
                 self.assertEqual(env.SESSION_LIMITER.keys, [])
 
+    async def test_rejects_oversized_body_before_parsing_or_rate_limiting(self):
+        env = fake_env()
+        request = valid_request(
+            headers={
+                "origin": "https://tone-jev.tomv.uk",
+                "x-tone-session": "123e4567-e89b-12d3-a456-426614174000",
+                "content-length": "4097",
+            }
+        )
+
+        payload, status = await api_dispatch(request, env)
+
+        self.assertEqual((payload, status), ({"error": "Request too large"}, 413))
+        self.assertEqual(env.SESSION_LIMITER.keys, [])
+        self.assertEqual(env.AI.calls, [])
+
     async def test_rejects_cross_origin_without_inference(self):
         env = fake_env()
         request = valid_request(
