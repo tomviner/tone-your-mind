@@ -347,7 +347,7 @@ export default function App() {
           tone your mind<span>.</span>
         </a>
         <a className="sibling-link" href="https://jev-tone.tomv.uk">
-          play the original <span aria-hidden="true">↗</span>
+          mind your tone <span aria-hidden="true">↗</span>
         </a>
       </header>
 

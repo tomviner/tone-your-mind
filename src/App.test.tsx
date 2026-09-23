@@ -92,6 +92,16 @@ afterEach(() => {
 });
 
 describe("tone your mind", () => {
+  test("names the original game in the header link", () => {
+    render(<App />);
+
+    expect(
+      within(screen.getByRole("banner")).getByRole("link", {
+        name: "mind your tone",
+      }),
+    ).toHaveAttribute("href", "https://jev-tone.tomv.uk");
+  });
+
   test("leads with the inverse action instead of the internal tone JEV name", () => {
     render(<App />);
 

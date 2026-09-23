@@ -95,7 +95,7 @@ summary:focus-visible {
 
 .wordmark {
   color: var(--ink);
-  font-size: 1.15rem;
+  font-size: clamp(1.15rem, 5vw, 1.45rem);
   font-weight: 900;
   letter-spacing: -0.055em;
   text-decoration: none;
@@ -633,16 +633,9 @@ blockquote {
 }
 
 .site-footer {
-  display: block;
-  align-items: flex-end;
+  align-items: flex-start;
   color: var(--muted);
   font-size: 0.72rem;
-}
-
-.site-footer .footer-actions {
-  width: 100%;
-  margin-top: 14px;
-  justify-content: space-between;
 }
 
 .footer-actions,
