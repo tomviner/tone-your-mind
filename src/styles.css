@@ -612,21 +612,6 @@ blockquote {
   line-height: 1.4;
 }
 
-.reality-check {
-  margin: 34px 0;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgb(255 250 242 / 78%);
-  padding: 14px 16px;
-  color: var(--muted);
-  font-size: 0.78rem;
-  line-height: 1.5;
-}
-
-.reality-check strong {
-  color: var(--ink);
-}
-
 .site-footer {
   display: block;
   align-items: flex-end;

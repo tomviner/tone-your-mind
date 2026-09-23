@@ -61,8 +61,7 @@ the complete attempt trail, and an inspection trace. The expandable **inspect
 API** section shows the exact browser request, the ordered Granite and Jev model
 inputs, normalized model responses, Jev's full per-level probability feedback,
 and the complete API response. Its log lives only in the current browser
-session. The interface is deliberately honest about near misses and warns that
-AI can alter meaning as well as tone.
+session. The interface is deliberately honest about near misses.
 
 ## Development
 

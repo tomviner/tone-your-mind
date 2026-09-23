@@ -541,12 +541,6 @@ export default function App() {
         </section>
       )}
 
-      <aside className="reality-check">
-        <strong>Check before sending.</strong> The writer can change meaning as
-        well as tone. Jev measures the wording, but it doesn’t guarantee the
-        meaning is maintained.
-      </aside>
-
       <footer className="site-footer">
         <span>Granite writes · TypeSafe Jev scores · nothing is saved</span>
         <div className="footer-actions">

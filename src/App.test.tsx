@@ -120,9 +120,10 @@ describe("tone your mind", () => {
     expect(
       screen.getByRole("button", { name: /random text/i }),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/check before sending/i)).not.toBeInTheDocument();
     expect(
-      screen.getByText(/doesn’t guarantee the meaning is maintained/i),
-    ).toBeInTheDocument();
+      screen.queryByText(/doesn’t guarantee the meaning is maintained/i),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^source/i })).toHaveAttribute(
       "href",
       "https://github.com/tomviner/tone-your-mind",
