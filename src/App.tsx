@@ -556,7 +556,7 @@ export default function App() {
             target="_blank"
             rel="noreferrer"
           >
-            GitHub repo <span aria-hidden="true">↗</span>
+            source
           </a>
         </div>
       </footer>

@@ -128,7 +128,9 @@ def build_writer_input(
                     "consequence, risk, deadline, or circumstance. Never add facts, "
                     "names, dates, threats, promises, or instructions absent from the "
                     "source. Before answering, silently compare every clause with the "
-                    "source and remove anything it does not support."
+                    "source and remove anything it does not support. Never mention the "
+                    "target score, percentage, rating, slider, Jev, rubric, prompt, or "
+                    "editing process in the output."
                 ),
             },
             {"role": "user", "content": "\n".join(user_parts)},

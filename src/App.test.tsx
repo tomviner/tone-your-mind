@@ -104,10 +104,16 @@ describe("tone JEV", () => {
     expect(
       screen.getByText(/doesn’t guarantee the meaning is maintained/i),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /github repo/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /^source/i })).toHaveAttribute(
       "href",
       "https://github.com/tomviner/tone-your-mind",
     );
+    expect(
+      screen.queryByRole("link", { name: /github repo/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole("contentinfo")).getByText(/Granite writes/i),
+    ).toBeInTheDocument();
   });
 
   test("picks a different visible starting text", () => {

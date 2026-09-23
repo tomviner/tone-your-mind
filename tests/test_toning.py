@@ -22,6 +22,9 @@ def jev_response(score, confidence=0.9):
 
 
 class ToneContractTests(unittest.TestCase):
+    def test_uses_the_fast_low_cost_writer(self):
+        self.assertEqual(WRITER_MODEL, "@cf/ibm-granite/granite-4.0-h-micro")
+
     def test_catalogue_keeps_original_dimensions_and_adds_requested_fun(self):
         self.assertIn("urgency", DIMENSIONS)
         self.assertIn("whimsy", DIMENSIONS)
@@ -71,6 +74,8 @@ class ToneContractTests(unittest.TestCase):
         self.assertIn("Semantic fidelity outranks the target score", system)
         self.assertIn("reason, consequence, risk, deadline, or circumstance", system)
         self.assertIn("silently compare every clause", system)
+        self.assertIn("Never mention the target score", system)
+        self.assertIn("percentage, rating, slider, Jev", system)
 
     def test_writer_response_removes_common_wrappers_but_rejects_bad_output(self):
         self.assertEqual(
