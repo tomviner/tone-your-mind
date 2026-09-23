@@ -102,6 +102,16 @@ describe("tone your mind", () => {
     ).toHaveAttribute("href", "https://jev-tone.tomv.uk");
   });
 
+  test("credits Jev's role beside the game name", () => {
+    render(<App />);
+
+    expect(
+      within(screen.getByRole("banner")).getByText(
+        "Granite writes · Jev scores",
+      ),
+    ).toBeInTheDocument();
+  });
+
   test("leads with the inverse action instead of the internal tone JEV name", () => {
     render(<App />);
 

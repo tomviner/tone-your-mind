@@ -343,9 +343,12 @@ export default function App() {
   return (
     <main className="tool-shell">
       <header className="site-header">
-        <a className="wordmark" href="/" aria-label="tone your mind home">
-          tone your mind<span>.</span>
-        </a>
+        <div className="brand-lockup">
+          <a className="wordmark" href="/" aria-label="tone your mind home">
+            tone your mind<span>.</span>
+          </a>
+          <span className="model-credit">Granite writes · Jev scores</span>
+        </div>
         <a className="sibling-link" href="https://jev-tone.tomv.uk">
           mind your tone <span aria-hidden="true">↗</span>
         </a>

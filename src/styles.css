@@ -105,6 +105,21 @@ summary:focus-visible {
   color: var(--coral-dark);
 }
 
+.brand-lockup {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+}
+
+.model-credit {
+  color: var(--coral-dark);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+
 .sibling-link,
 .site-footer a {
   color: var(--ink);
