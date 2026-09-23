@@ -1,629 +1,288 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-import ApiInspector, { type ApiLogEntry } from "./ApiInspector";
-import ScoreMeter, { type ScoreFreshness } from "./ScoreMeter";
-import { DIMENSIONS, DIMENSION_KEYS, type DimensionKey } from "./dimensions";
 import {
-  createChallenge,
-  createPracticeRound,
-  isInsideTarget,
-  pointsForSuccess,
-} from "./game";
+  type CSSProperties,
+  type FormEvent,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
-type Mode = "challenge" | "practice";
-type ScoreMap = Partial<
-  Record<DimensionKey, { score: number; confidence: number | null }>
->;
-type ScoreResponse = {
-  error?: string;
-  inspection?: {
-    request?: unknown;
-    response?: unknown;
-  };
-  model?: string | null;
-  scores?: ScoreMap;
+import { DIMENSIONS, DIMENSION_KEYS, type DimensionKey } from "./dimensions";
+import type { ToneResponse } from "./types";
+
+const MAX_SOURCE_LENGTH = 240;
+const SESSION_STORAGE_KEY = "tone-jev-session";
+const SESSION_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;
+
+const sessionId = (): string => {
+  const stored = window.localStorage.getItem(SESSION_STORAGE_KEY);
+  if (stored && SESSION_PATTERN.test(stored)) return stored;
+
+  const generated =
+    typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `tone-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  window.localStorage.setItem(SESSION_STORAGE_KEY, generated);
+  return generated;
 };
 
-interface AppProps {
-  initialSeed?: string;
-}
+const scoreText = (value: number): string =>
+  Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1);
 
-const SUCCESS_HOLD_MS = 5_000;
-const SUCCESS_TYPING_GRACE_MS = 1_000;
-const MAX_API_LOG_ENTRIES = 20;
-
-const seedFromLocation = (): string => {
-  const supplied = new URLSearchParams(window.location.search).get("seed");
-  return supplied?.trim() || crypto.randomUUID().slice(0, 8);
-};
-
-const savedHighScore = (): number => {
-  const value = Number(
-    window.localStorage.getItem("mind-your-tone-high-score"),
-  );
-  return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
-};
-
-export default function App({ initialSeed }: AppProps) {
-  const [seed, setSeed] = useState(() => initialSeed ?? seedFromLocation());
-  const [mode, setMode] = useState<Mode>("challenge");
-  const [levelIndex, setLevelIndex] = useState(0);
-  const [practiceKey, setPracticeKey] = useState<DimensionKey>("urgency");
-  const [practiceSerial, setPracticeSerial] = useState(0);
-  const [phrase, setPhrase] = useState("");
-  const [scores, setScores] = useState<ScoreMap>({});
-  const [pointsLeft, setPointsLeft] = useState(30);
-  const [total, setTotal] = useState(0);
-  const [highScore, setHighScore] = useState(savedHighScore);
-  const [status, setStatus] = useState("Type to score. Hit every target.");
+export default function App() {
+  const [source, setSource] = useState("");
+  const [dimensionKey, setDimensionKey] = useState<DimensionKey>("panic");
+  const [target, setTarget] = useState(60);
+  const [result, setResult] = useState<ToneResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [scoreFreshness, setScoreFreshness] =
-    useState<ScoreFreshness>("current");
-  const [celebrating, setCelebrating] = useState(false);
-  const [successPaused, setSuccessPaused] = useState(false);
-  const [complete, setComplete] = useState(false);
-  const [apiInspectorOpen, setApiInspectorOpen] = useState(
-    () => window.location.hash === "#inspect-api",
+  const [message, setMessage] = useState(
+    "Set the dial. Granite writes; Jev judges.",
   );
-  const [apiLog, setApiLog] = useState<ApiLogEntry[]>([]);
-  const pointsLeftRef = useRef(pointsLeft);
-  const totalRef = useRef(total);
-  const highScoreRef = useRef(highScore);
-  const apiRequestIdRef = useRef(0);
-  const advancingRef = useRef(false);
-  const celebratingRef = useRef(false);
-  const successStartedAtRef = useRef(0);
-  const phraseInputRef = useRef<HTMLTextAreaElement>(null);
-  const finishHeadingRef = useRef<HTMLHeadingElement>(null);
-  const inspectApiLinkRef = useRef<HTMLAnchorElement>(null);
-
-  pointsLeftRef.current = pointsLeft;
-  totalRef.current = total;
-  highScoreRef.current = highScore;
-
-  const challenge = useMemo(() => createChallenge(seed), [seed]);
-  const practiceRound = useMemo(
-    () => createPracticeRound(`${seed}:${practiceSerial}`, practiceKey),
-    [practiceKey, practiceSerial, seed],
+  const [error, setError] = useState<string | null>(null);
+  const sourceRef = useRef<HTMLTextAreaElement>(null);
+  const dimension = DIMENSIONS[dimensionKey];
+  const sortedDimensions = useMemo(
+    () =>
+      [...DIMENSION_KEYS].sort((left, right) =>
+        DIMENSIONS[left].name.localeCompare(DIMENSIONS[right].name),
+      ),
+    [],
   );
-  const round = mode === "challenge" ? challenge[levelIndex] : practiceRound;
-  const shareUrl = useMemo(() => {
-    const url = new URL(window.location.href);
-    url.search = "";
-    url.hash = "";
-    url.searchParams.set("seed", seed);
-    return url.toString();
-  }, [seed]);
-  const advanceLabel =
-    mode === "practice"
-      ? "next target"
-      : levelIndex === challenge.length - 1
-        ? "see results"
-        : "next level";
 
-  const advanceFromSuccess = useCallback(() => {
-    if (!celebrating || advancingRef.current) return;
-    advancingRef.current = true;
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (loading) return;
 
-    if (mode === "practice") {
-      setPracticeSerial((current) => current + 1);
-      setPhrase("");
-      setScores({});
-      setScoreFreshness("current");
-      celebratingRef.current = false;
-      setCelebrating(false);
-      setSuccessPaused(false);
-      setStatus("Fresh target.");
-      phraseInputRef.current?.focus();
-      return;
-    }
+    setLoading(true);
+    setError(null);
+    setMessage("Granite writes. Jev judges. The loop tightens.");
 
-    if (levelIndex === challenge.length - 1) {
-      setComplete(true);
-      celebratingRef.current = false;
-      setCelebrating(false);
-      setSuccessPaused(false);
-      setStatus("Tone mastered.");
-      return;
-    }
-
-    setLevelIndex((current) => current + 1);
-    setPointsLeft(30);
-    pointsLeftRef.current = 30;
-    setPhrase("");
-    setScores({});
-    setScoreFreshness("current");
-    celebratingRef.current = false;
-    setCelebrating(false);
-    setSuccessPaused(false);
-    setStatus("New target.");
-    phraseInputRef.current?.focus();
-  }, [celebrating, challenge.length, levelIndex, mode]);
-
-  useEffect(() => {
-    const syncInspectorToHash = () => {
-      setApiInspectorOpen(window.location.hash === "#inspect-api");
-    };
-    window.addEventListener("hashchange", syncInspectorToHash);
-    return () => window.removeEventListener("hashchange", syncInspectorToHash);
-  }, []);
-
-  useEffect(() => {
-    if (complete) finishHeadingRef.current?.focus();
-  }, [complete]);
-
-  useEffect(() => {
-    if (!celebrating) return undefined;
-
-    const advanceOnEnter = (event: KeyboardEvent) => {
-      if (
-        event.key !== "Enter" ||
-        event.defaultPrevented ||
-        event.repeat ||
-        event.isComposing ||
-        event.altKey ||
-        event.ctrlKey ||
-        event.metaKey ||
-        event.shiftKey
-      ) {
-        return;
-      }
-      event.preventDefault();
-      advanceFromSuccess();
-    };
-
-    window.addEventListener("keydown", advanceOnEnter);
-    return () => window.removeEventListener("keydown", advanceOnEnter);
-  }, [advanceFromSuccess, celebrating]);
-
-  useEffect(() => {
-    if (mode !== "challenge" || complete || celebrating) return undefined;
-    const timer = window.setInterval(() => {
-      setPointsLeft((current) => Math.max(0, current - 1));
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, [celebrating, complete, levelIndex, mode]);
-
-  useEffect(() => {
-    if (complete || !phrase.trim() || phrase.length > 120) {
-      return undefined;
-    }
-
-    const levelSecured = celebratingRef.current;
-    const controller = new AbortController();
-    setLoading(false);
-    setStatus(
-      levelSecured
-        ? "Level secured. Waiting to check this version…"
-        : "Waiting for a pause…",
-    );
-    const timer = window.setTimeout(async () => {
-      setLoading(true);
-      setStatus(
-        levelSecured
-          ? "Level secured. Checking this version…"
-          : "Jev is scoring…",
-      );
-      const requestBody = {
-        phrase,
-        dimensions: round.dimensions.map(({ key }) => key),
-      };
-      const requestId = ++apiRequestIdRef.current;
-      setApiLog((current) => [
-        ...current.slice(-(MAX_API_LOG_ENTRIES - 1)),
-        {
-          id: requestId,
-          request: requestBody,
-          status: "pending",
+    try {
+      const response = await fetch("/api/tone", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-tone-session": sessionId(),
         },
-      ]);
-      let responseStatus: number | undefined;
-
-      try {
-        const response = await fetch("/api/score", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(requestBody),
-          signal: controller.signal,
-        });
-        responseStatus = response.status;
-        let body: ScoreResponse;
-        try {
-          body = (await response.json()) as ScoreResponse;
-        } catch {
-          setApiLog((current) =>
-            current.map((entry) =>
-              entry.id === requestId
-                ? {
-                    ...entry,
-                    httpStatus: response.status,
-                    response: { error: "Response was not valid JSON." },
-                    status: "error",
-                  }
-                : entry,
-            ),
-          );
-          throw new Error("invalid JSON response");
-        }
-        const hasEveryScore = round.dimensions.every(
-          ({ key }) => typeof body?.scores?.[key]?.score === "number",
-        );
-        const responseIsValid = Boolean(body?.scores) && hasEveryScore;
-        setApiLog((current) =>
-          current.map((entry) =>
-            entry.id === requestId
-              ? {
-                  ...entry,
-                  httpStatus: response.status,
-                  jevRequest: body?.inspection?.request,
-                  response: body,
-                  status: response.ok && responseIsValid ? "complete" : "error",
-                }
-              : entry,
-          ),
-        );
-        if (!response.ok) throw new Error("score request failed");
-        if (controller.signal.aborted) return;
-        if (!body?.scores || !hasEveryScore) throw new Error("missing score");
-
-        setScores(body.scores);
-        setScoreFreshness("current");
-        const hit = round.dimensions.every(({ key, target }) =>
-          isInsideTarget(body.scores?.[key]?.score ?? Number.NaN, target),
-        );
-        if (levelSecured) {
-          setStatus(
-            hit
-              ? "Level secured. This version still hits."
-              : "Level secured. This version misses — keep experimenting.",
-          );
-          setLoading(false);
-          return;
-        }
-        if (!hit) {
-          setStatus("Closer.");
-          setLoading(false);
-          return;
-        }
-
-        if (mode === "challenge") {
-          const nextTotal =
-            totalRef.current + pointsForSuccess(pointsLeftRef.current);
-          totalRef.current = nextTotal;
-          setTotal(nextTotal);
-          if (
-            levelIndex === challenge.length - 1 &&
-            nextTotal > highScoreRef.current
-          ) {
-            highScoreRef.current = nextTotal;
-            setHighScore(nextTotal);
-            window.localStorage.setItem(
-              "mind-your-tone-high-score",
-              String(nextTotal),
-            );
-          }
-        }
-        advancingRef.current = false;
-        successStartedAtRef.current = Date.now();
-        setSuccessPaused(false);
-        celebratingRef.current = true;
-        setCelebrating(true);
-        setLoading(false);
-        setStatus("Nailed it.");
-      } catch {
-        if (controller.signal.aborted) {
-          setApiLog((current) =>
-            current.map((entry) =>
-              entry.id === requestId && entry.status === "pending"
-                ? { ...entry, status: "cancelled" }
-                : entry,
-            ),
-          );
-          return;
-        }
-        setApiLog((current) =>
-          current.map((entry) =>
-            entry.id === requestId && entry.status === "pending"
-              ? {
-                  ...entry,
-                  httpStatus: responseStatus,
-                  response: { error: "Network request failed." },
-                  status: "error",
-                }
-              : entry,
-          ),
-        );
-        setStatus(
-          levelSecured
-            ? "Level secured. Jev blinked on this version."
-            : "Jev blinked. Keep typing.",
-        );
-        setLoading(false);
-        setScoreFreshness("stale");
+        body: JSON.stringify({ source, dimension: dimensionKey, target }),
+      });
+      const body = (await response.json()) as ToneResponse & { error?: string };
+      if (!response.ok) {
+        throw new Error(body.error || "The tone loop lost the plot");
       }
-    }, 600);
 
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [challenge.length, complete, levelIndex, mode, phrase, round]);
-
-  useEffect(() => {
-    if (!celebrating || successPaused) return undefined;
-    const timer = window.setTimeout(advanceFromSuccess, SUCCESS_HOLD_MS);
-
-    return () => window.clearTimeout(timer);
-  }, [advanceFromSuccess, celebrating, successPaused]);
-
-  const resetRoundView = () => {
-    setPhrase("");
-    setScores({});
-    setLoading(false);
-    setScoreFreshness("current");
-    celebratingRef.current = false;
-    setCelebrating(false);
-    setSuccessPaused(false);
-    successStartedAtRef.current = 0;
-    advancingRef.current = false;
-  };
-
-  const updatePhrase = (nextPhrase: string) => {
-    setPhrase(nextPhrase);
-    if (
-      celebrating &&
-      !successPaused &&
-      Date.now() - successStartedAtRef.current >= SUCCESS_TYPING_GRACE_MS
-    ) {
-      setSuccessPaused(true);
-    }
-    if (!nextPhrase.trim()) {
-      setScores({});
+      setResult(body);
+      setMessage(
+        body.hit
+          ? "Close enough for Jev. Human judgement still applies."
+          : "Closest attempt kept. The dial and the judge disagreed.",
+      );
+    } catch (caught) {
+      const nextError =
+        caught instanceof Error
+          ? caught.message
+          : "The tone loop lost the plot";
+      setError(nextError);
+      setMessage("Nothing was replaced. Adjust the dial or try again.");
+    } finally {
       setLoading(false);
-      setScoreFreshness("current");
-      setStatus(
-        celebrating
-          ? "Level secured. Type another version or continue."
-          : "Type to score. Hit every target.",
-      );
-      return;
     }
-    setScoreFreshness("pending");
   };
 
-  const chooseMode = (nextMode: Mode) => {
-    setMode(nextMode);
-    setLevelIndex(0);
-    setPracticeSerial(0);
-    setPointsLeft(30);
-    pointsLeftRef.current = 30;
-    setTotal(0);
-    totalRef.current = 0;
-    setComplete(false);
-    setStatus("Type to score. Hit every target.");
-    resetRoundView();
-  };
-
-  const newChallenge = () => {
-    const nextSeed = crypto.randomUUID().slice(0, 8);
-    setSeed(nextSeed);
-    setLevelIndex(0);
-    setPointsLeft(30);
-    pointsLeftRef.current = 30;
-    setTotal(0);
-    totalRef.current = 0;
-    setComplete(false);
-    setStatus("Type to score. Hit every target.");
-    resetRoundView();
-  };
-
-  const closeApiInspector = () => {
-    setApiInspectorOpen(false);
-    if (window.location.hash === "#inspect-api") {
-      window.history.replaceState(
-        null,
-        "",
-        `${window.location.pathname}${window.location.search}`,
-      );
+  const copyResult = async () => {
+    if (!result) return;
+    try {
+      await navigator.clipboard.writeText(result.phrase);
+      setMessage("Copied.");
+    } catch {
+      setMessage("Copy failed. Select the result instead.");
     }
-    inspectApiLinkRef.current?.focus();
+  };
+
+  const reuseResult = () => {
+    if (!result) return;
+    setSource(result.phrase);
+    setMessage("Result loaded as the next starting text.");
+    sourceRef.current?.focus();
   };
 
   return (
-    <main className="game-shell">
+    <main className="tool-shell">
       <header className="site-header">
-        <a className="wordmark" href="/" aria-label="mind your tone home">
-          mind your tone<span aria-hidden="true">!</span>
+        <a className="wordmark" href="/" aria-label="tone JEV home">
+          tone <span>JEV</span>
         </a>
-        <nav aria-label="Game mode" className="mode-switch">
-          <button
-            type="button"
-            aria-pressed={mode === "challenge"}
-            onClick={() => chooseMode("challenge")}
-          >
-            challenge
-          </button>
-          <button
-            type="button"
-            aria-pressed={mode === "practice"}
-            onClick={() => chooseMode("practice")}
-          >
-            practice
-          </button>
-        </nav>
+        <a className="sibling-link" href="https://jev-tone.tomv.uk">
+          play the original <span aria-hidden="true">↗</span>
+        </a>
       </header>
 
-      <section className="game-card" aria-labelledby="game-heading">
-        <div className="game-meta">
-          <p className="level-label">
-            {mode === "challenge" ? `level ${levelIndex + 1} / 10` : "practice"}
-          </p>
-          <div className="scoreboard" aria-label="Run score">
-            {mode === "challenge" && (
-              <strong className={pointsLeft === 0 ? "at-zero" : ""}>
-                {pointsLeft} points left
-              </strong>
-            )}
-            <span>{total} total</span>
-            {highScore > 0 && <span>{highScore} best</span>}
-          </div>
-        </div>
-
-        {mode === "practice" && (
-          <label className="practice-picker">
-            Pick a dimension
-            <select
-              value={practiceKey}
-              disabled={celebrating}
-              onChange={(event) => {
-                if (celebrating) return;
-                setPracticeKey(event.target.value as DimensionKey);
-                setPracticeSerial((current) => current + 1);
-                setScores({});
-                setScoreFreshness("current");
-                setStatus("Type to score. Hit the target.");
-              }}
-            >
-              {DIMENSION_KEYS.map((key) => (
-                <option value={key} key={key}>
-                  {DIMENSIONS[key].name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        {complete ? (
-          <div className="finish-screen">
-            <p className="eyebrow">run complete</p>
-            <h1 id="game-heading" ref={finishHeadingRef} tabIndex={-1}>
-              {total} points
-            </h1>
-            <p>You shaped every tone without breaking a sentence.</p>
-            <div className="finish-actions">
-              <button
-                className="primary-button"
-                type="button"
-                onClick={newChallenge}
-              >
-                new challenge
-              </button>
-              <a className="text-button" href={shareUrl}>
-                share this challenge
-              </a>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="intro-copy">
-              <p className="eyebrow">type → scored live → adjust</p>
-              <h1 id="game-heading">
-                <span>Write a line.</span>
-                <span>Hit the right tone.</span>
-              </h1>
-            </div>
-
-            <div
-              className={`meters${celebrating ? " is-celebrating" : ""}${scoreFreshness !== "current" ? " has-stale-scores" : ""}`}
-              aria-label="Tone targets"
-              aria-busy={scoreFreshness === "pending"}
-            >
-              {round.dimensions.map(({ key, target }) => (
-                <ScoreMeter
-                  key={key}
-                  dimensionKey={key}
-                  target={target}
-                  score={scores[key]?.score}
-                  freshness={scoreFreshness}
-                />
-              ))}
-            </div>
-
-            <div className="phrase-form">
-              <div className="input-heading">
-                <label htmlFor="phrase">Your phrase</label>
-                <span>{phrase.length}/120</span>
-              </div>
-              <textarea
-                id="phrase"
-                ref={phraseInputRef}
-                value={phrase}
-                maxLength={120}
-                rows={3}
-                autoFocus
-                placeholder="Try: Could you send that over today?"
-                onChange={(event) => updatePhrase(event.target.value)}
-              />
-              <div className="form-footer">
-                <p className="status" role="status">
-                  <span aria-hidden="true">
-                    {celebrating || status.startsWith("Nailed") ? "✓" : "↗"}
-                  </span>
-                  {status}
-                </p>
-                <span className={`live-badge${loading ? " is-scoring" : ""}`}>
-                  {loading ? "scoring…" : celebrating ? "secured" : "live"}
-                </span>
-              </div>
-              {celebrating && (
-                <button
-                  className={`advance-button${successPaused ? " is-paused" : ""}`}
-                  type="button"
-                  onClick={advanceFromSuccess}
-                  aria-label={
-                    successPaused
-                      ? `${advanceLabel}; automatic advance paused; press Enter to continue`
-                      : `${advanceLabel}; advances automatically in 5 seconds`
-                  }
-                  aria-keyshortcuts="Enter"
-                >
-                  <span>{advanceLabel}</span>
-                  <small>
-                    {successPaused
-                      ? "paused · enter to continue"
-                      : "enter · auto in 5s"}
-                  </small>
-                </button>
-              )}
-            </div>
-          </>
-        )}
+      <section className="hero" aria-labelledby="page-title">
+        <p className="kicker">the machine plays the game now</p>
+        <h1 id="page-title">
+          <span>tone</span> <strong>JEV</strong>
+        </h1>
+        <p className="strapline">tone your mind</p>
+        <p className="lede">
+          Need to panic someone, but only 60%? Pick a feeling, turn the dial,
+          and let one AI rewrite while another marks its homework.
+        </p>
       </section>
 
-      <footer className="site-footer">
-        <span>scored only by TypeSafe Jev</span>
-        <div className="footer-actions">
-          <a
-            href="#inspect-api"
-            className="text-button"
-            ref={inspectApiLinkRef}
-            onClick={() => setApiInspectorOpen(true)}
-          >
-            inspect API
-          </a>
-          <a
-            className="text-button"
-            href="https://github.com/tomviner/mind-your-tone"
-            target="_blank"
-            rel="noreferrer"
-          >
-            GitHub repo
-          </a>
-          {mode === "challenge" && !complete && (
-            <a className="text-button" href={shareUrl}>
-              share challenge
-            </a>
-          )}
+      <form className="tone-card" onSubmit={submit} aria-busy={loading}>
+        <div className="source-field">
+          <div className="field-heading">
+            <label htmlFor="source">Starting text</label>
+            <span>{source.length}/240</span>
+          </div>
+          <textarea
+            id="source"
+            ref={sourceRef}
+            value={source}
+            onChange={(event) => setSource(event.target.value)}
+            maxLength={MAX_SOURCE_LENGTH}
+            rows={4}
+            placeholder="Please read the manual."
+            disabled={loading}
+          />
+          <p className="field-note">
+            Optional—leave it blank and the machine invents something to tone.
+          </p>
         </div>
-      </footer>
 
-      {apiInspectorOpen && (
-        <ApiInspector
-          entries={apiLog}
-          onClear={() => setApiLog([])}
-          onClose={closeApiInspector}
-        />
+        <div className="controls-grid">
+          <div className="select-field">
+            <label htmlFor="dimension">Tone dimension</label>
+            <div className="select-wrap">
+              <select
+                id="dimension"
+                value={dimensionKey}
+                onChange={(event) =>
+                  setDimensionKey(event.target.value as DimensionKey)
+                }
+                disabled={loading}
+              >
+                {sortedDimensions.map((key) => (
+                  <option key={key} value={key}>
+                    {DIMENSIONS[key].name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="dial-field">
+            <div className="dial-heading">
+              <label htmlFor="target">{dimension.name} level</label>
+              <output htmlFor="target">{target}%</output>
+            </div>
+            <input
+              id="target"
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              value={target}
+              onChange={(event) => setTarget(Number(event.target.value))}
+              disabled={loading}
+              aria-label={`${dimension.name} level`}
+              style={{ "--target": `${target}%` } as CSSProperties}
+            />
+            <div className="dial-ends" aria-hidden="true">
+              <span>{dimension.low}</span>
+              <span>{dimension.high}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="submit-row">
+          <button className="primary-button" type="submit" disabled={loading}>
+            {loading ? "toning…" : "tone it"}
+            <span aria-hidden="true"> ←</span>
+          </button>
+          <p className="process-status" role="status" aria-live="polite">
+            {message}
+          </p>
+        </div>
+
+        {error && (
+          <aside className="error-panel" role="alert">
+            <strong>{error}</strong>
+            {error.includes("Try again soon") && (
+              <p>Give the public tone machine a few seconds to cool off.</p>
+            )}
+          </aside>
+        )}
+      </form>
+
+      {result && (
+        <section className="result-card" aria-label="Toned result">
+          <div className="result-heading">
+            <div>
+              <p className="kicker">best of {result.attempts.length}</p>
+              <h2>{result.hit ? "Close enough." : "Closest one."}</h2>
+            </div>
+            <div className={`verdict ${result.hit ? "is-hit" : "is-miss"}`}>
+              {result.hit ? "hit" : "near miss"}
+            </div>
+          </div>
+
+          <blockquote>{result.phrase}</blockquote>
+
+          <dl className="score-summary">
+            <div>
+              <dt>asked for</dt>
+              <dd>{scoreText(result.target)}%</dd>
+            </div>
+            <div>
+              <dt>Jev says</dt>
+              <dd>{scoreText(result.score)}%</dd>
+            </div>
+            <div>
+              <dt>distance</dt>
+              <dd>{scoreText(result.distance)} points away</dd>
+            </div>
+          </dl>
+
+          <div className="result-actions">
+            <button type="button" onClick={copyResult}>
+              copy result
+            </button>
+            <button type="button" onClick={reuseResult}>
+              use as starting text
+            </button>
+          </div>
+
+          <details className="attempts">
+            <summary>show the loop</summary>
+            <ol>
+              {result.attempts.map((attempt, index) => (
+                <li key={`${index}-${attempt.phrase}`}>
+                  <span>
+                    attempt {index + 1} · {scoreText(attempt.score)}%
+                  </span>
+                  <p>“{attempt.phrase}”</p>
+                </li>
+              ))}
+            </ol>
+          </details>
+        </section>
       )}
+
+      <aside className="reality-check">
+        <strong>Check before sending.</strong> The writer can change meaning as
+        well as tone. Jev measures a rubric; it does not know your relationship.
+      </aside>
+
+      <footer className="site-footer">
+        <span>Granite writes · TypeSafe Jev scores · nothing is saved</span>
+        <a
+          href="https://github.com/tomviner/tone-your-mind"
+          target="_blank"
+          rel="noreferrer"
+        >
+          source <span aria-hidden="true">↗</span>
+        </a>
+      </footer>
     </main>
   );
 }
