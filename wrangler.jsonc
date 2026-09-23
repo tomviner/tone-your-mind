@@ -1,13 +1,13 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "mind-your-tone-python",
+  "name": "tone-jev-python",
   "main": "./worker/main.py",
   "compatibility_date": "2026-09-23",
   "compatibility_flags": ["python_workers"],
   "workers_dev": true,
   "routes": [
     {
-      "pattern": "jev-tone.tomv.uk",
+      "pattern": "tone-jev.tomv.uk",
       "custom_domain": true
     }
   ],
@@ -27,6 +27,27 @@
   },
   "ai": {
     "binding": "AI"
+  },
+  "ratelimits": [
+    {
+      "name": "SESSION_LIMITER",
+      "namespace_id": "2026092301",
+      "simple": {
+        "limit": 6,
+        "period": 60
+      }
+    },
+    {
+      "name": "GLOBAL_LIMITER",
+      "namespace_id": "2026092302",
+      "simple": {
+        "limit": 30,
+        "period": 60
+      }
+    }
+  ],
+  "limits": {
+    "subrequests": 10
   },
   "observability": {
     "enabled": true
