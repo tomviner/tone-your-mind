@@ -75,6 +75,10 @@ describe("tone JEV", () => {
       "240",
     );
     expect(screen.getByText(/leave it blank/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /github repo/i })).toHaveAttribute(
+      "href",
+      "https://github.com/tomviner/tone-your-mind",
+    );
   });
 
   test("updates the dial labels when a different dimension is chosen", () => {

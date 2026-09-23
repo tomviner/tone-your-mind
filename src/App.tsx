@@ -325,7 +325,7 @@ export default function App() {
           target="_blank"
           rel="noreferrer"
         >
-          source <span aria-hidden="true">↗</span>
+          GitHub repo <span aria-hidden="true">↗</span>
         </a>
       </footer>
     </main>
