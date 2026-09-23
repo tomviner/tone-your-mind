@@ -258,5 +258,70 @@
       "Clearly whimsical or delightfully surreal",
       "Wildly fantastical, absurd, or dreamlike"
     ]
+  },
+  "panic": {
+    "name": "Panic",
+    "low": "Unruffled",
+    "high": "Full panic",
+    "instructions": "How panicked, alarmed, or overwhelmed is the tone of this text?",
+    "criteria": [
+      "Completely calm and unruffled",
+      "Slightly worried but composed",
+      "Clearly anxious or alarmed",
+      "Strongly panicked and struggling to stay composed",
+      "Total, frantic, overwhelming panic"
+    ]
+  },
+  "passive_aggression": {
+    "name": "Passive aggression",
+    "low": "Straightforward",
+    "high": "Weaponised courtesy",
+    "instructions": "How passive-aggressive is the tone of this text?",
+    "criteria": [
+      "Entirely straightforward with no concealed hostility",
+      "A faint edge or indirect irritation",
+      "Noticeably indirect criticism behind polite wording",
+      "Strong passive aggression with pointed courtesy",
+      "Extreme passive aggression where every polite phrase carries hostility"
+    ]
+  },
+  "smugness": {
+    "name": "Smugness",
+    "low": "Self-effacing",
+    "high": "Insufferably smug",
+    "instructions": "How smug or self-satisfied is the tone of this text?",
+    "criteria": [
+      "Self-effacing with no superiority",
+      "Slightly pleased with itself",
+      "Clearly self-satisfied or knowing",
+      "Strongly smug and superior",
+      "Insufferably smug, triumphant, and condescending"
+    ]
+  },
+  "drama": {
+    "name": "Drama",
+    "low": "No big deal",
+    "high": "Season finale",
+    "instructions": "How melodramatic or theatrically heightened is the tone of this text?",
+    "criteria": [
+      "Entirely matter-of-fact and understated",
+      "Slightly heightened for effect",
+      "Noticeably dramatic or theatrical",
+      "Highly melodramatic with grand emotional stakes",
+      "Maximum season-finale drama where everything feels momentous"
+    ]
+  },
+  "ominousness": {
+    "name": "Ominousness",
+    "low": "All clear",
+    "high": "Something approaches",
+    "instructions": "How ominous, foreboding, or suggestive of impending trouble is this text?",
+    "criteria": [
+      "Entirely reassuring with no foreboding",
+      "A faint suggestion that something may be wrong",
+      "Clearly uneasy or foreboding",
+      "Strongly ominous with impending trouble",
+      "Extremely ominous, as if disaster is unavoidable and near"
+    ]
   }
 }
