@@ -192,6 +192,32 @@ def writer_output_issue(phrase: str, source: str) -> str | None:
     return None
 
 
+def _reviewer_feedback(answer: Any) -> dict[str, dict[str, Any]] | None:
+    legend = _field(answer, "legend")
+    probabilities = _field(answer, "probabilities")
+    if not isinstance(legend, dict) or not isinstance(probabilities, dict):
+        return None
+
+    clean_legend = {
+        str(level): description
+        for level, description in legend.items()
+        if isinstance(description, str)
+    }
+    clean_probabilities = {
+        str(level): float(probability)
+        for level, probability in probabilities.items()
+        if _is_number(probability) and 0 <= probability <= 1
+    }
+    if (
+        not clean_legend
+        or clean_legend.keys() != clean_probabilities.keys()
+        or len(clean_legend) != len(legend)
+        or len(clean_probabilities) != len(probabilities)
+    ):
+        return None
+    return {"legend": clean_legend, "probabilities": clean_probabilities}
+
+
 def score_from_jev_response(value: Any, dimension: str) -> dict[str, Any]:
     response = _field(value, "result") or value
     answers = _field(response, "answers")
@@ -201,11 +227,15 @@ def score_from_jev_response(value: Any, dimension: str) -> dict[str, Any]:
         raise ValueError("Jev returned an invalid score")
     confidence = _field(answer, "confidence")
     model = _field(response, "model")
-    return {
+    result = {
         "score": float(score),
         "confidence": float(confidence) if _is_number(confidence) else None,
         "model": str(model) if model is not None else None,
     }
+    feedback = _reviewer_feedback(answer)
+    if feedback is not None:
+        result["reviewer_feedback"] = feedback
+    return result
 
 
 def _valid_request(value: Any) -> bool:
@@ -273,6 +303,8 @@ async def tone_request(
             "score": jev["score"],
             "confidence": jev["confidence"],
         }
+        if "reviewer_feedback" in jev:
+            inspection["response"]["reviewer_feedback"] = jev["reviewer_feedback"]
         scorer_model = jev["model"] or scorer_model
         attempts.append(
             {

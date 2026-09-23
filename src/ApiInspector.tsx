@@ -24,6 +24,9 @@ const callLabel = (value: unknown): string =>
 const callField = (value: unknown, key: "request" | "response"): unknown =>
   isRecord(value) ? value[key] : undefined;
 
+const responseLabel = (label: string): string =>
+  label === "Jev" ? "Reviewer feedback · Jev response" : `${label} response`;
+
 export default function ApiInspector({
   entries,
   onClear,
@@ -53,7 +56,8 @@ export default function ApiInspector({
       </div>
       <p className="api-inspector-note">
         Browser session only. Exact API and model inputs; normalized model
-        responses. Nothing here is saved as history.
+        responses, including Jev’s score distribution. Nothing here is saved as
+        history.
       </p>
 
       {entries.length === 0 ? (
@@ -97,7 +101,7 @@ export default function ApiInspector({
                       <pre>
                         <code>{json(callField(call, "request"))}</code>
                       </pre>
-                      <h3>{label} response</h3>
+                      <h3>{responseLabel(label)}</h3>
                       <pre>
                         <code>
                           {callField(call, "response") === null

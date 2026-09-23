@@ -50,7 +50,21 @@ const resultBody = {
           model: "typesafe/jev",
           input: { state: "Please read the manual right now." },
         },
-        response: { model: "jev-1.13.0", score: 2.5, confidence: 0.88 },
+        response: {
+          model: "jev-1.13.0",
+          score: 2.5,
+          confidence: 0.88,
+          reviewer_feedback: {
+            legend: {
+              0: "Unruffled",
+              1: "Slight concern",
+              2: "Clearly worried",
+              3: "Strong panic",
+              4: "Full panic",
+            },
+            probabilities: { 0: 0, 1: 0, 2: 0.5, 3: 0.5, 4: 0 },
+          },
+        },
       },
     ],
   },
@@ -217,7 +231,11 @@ describe("tone your mind", () => {
     expect(within(inspector).getByText("Granite request")).toBeInTheDocument();
     expect(within(inspector).getByText("Granite response")).toBeInTheDocument();
     expect(within(inspector).getByText("Jev request")).toBeInTheDocument();
-    expect(within(inspector).getByText("Jev response")).toBeInTheDocument();
+    expect(
+      within(inspector).getByText("Reviewer feedback · Jev response"),
+    ).toBeInTheDocument();
+    expect(inspector).toHaveTextContent('"4": "Full panic"');
+    expect(inspector).toHaveTextContent('"3": 0.5');
     expect(within(inspector).getByText("API response")).toBeInTheDocument();
     expect(within(inspector).getAllByText(/typesafe\/jev/)).not.toHaveLength(0);
     expect(

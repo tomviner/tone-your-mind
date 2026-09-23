@@ -140,6 +140,55 @@ class ToneContractTests(unittest.TestCase):
             expected,
         )
 
+    def test_preserves_jev_distribution_as_reviewer_feedback(self):
+        result = score_from_jev_response(
+            {
+                "model": "jev-1.13.0",
+                "answers": {
+                    "panic": {
+                        "type": "score",
+                        "score": 3.2,
+                        "confidence": 0.67,
+                        "legend": {
+                            "0": "Unruffled",
+                            "1": "Slight concern",
+                            "2": "Clearly worried",
+                            "3": "Strong panic",
+                            "4": "Full panic",
+                        },
+                        "probabilities": {
+                            "0": 0.0,
+                            "1": 0.0,
+                            "2": 0.1,
+                            "3": 0.6,
+                            "4": 0.3,
+                        },
+                    }
+                },
+            },
+            "panic",
+        )
+
+        self.assertEqual(
+            result["reviewer_feedback"],
+            {
+                "legend": {
+                    "0": "Unruffled",
+                    "1": "Slight concern",
+                    "2": "Clearly worried",
+                    "3": "Strong panic",
+                    "4": "Full panic",
+                },
+                "probabilities": {
+                    "0": 0.0,
+                    "1": 0.0,
+                    "2": 0.1,
+                    "3": 0.6,
+                    "4": 0.3,
+                },
+            },
+        )
+
     def test_rejects_missing_non_finite_and_out_of_range_jev_scores(self):
         for score in (None, math.nan, -0.1, 4.1, True):
             with self.subTest(score=score), self.assertRaises(ValueError):
