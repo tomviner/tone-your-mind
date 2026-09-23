@@ -1,55 +1,81 @@
-# mind your tone
+# tone JEV
 
-A tiny phrase-target game scored exclusively by TypeSafe's Jev model.
+`tone your mind`: the playful inverse of
+[mind your tone](https://jev-tone.tomv.uk).
 
-**Play now:** [jev-tone.tomv.uk](https://jev-tone.tomv.uk)
+**Try it:** [tone-jev.tomv.uk](https://tone-jev.tomv.uk)
 
-Type a short phrase and pause. It is scored automatically; adjust it until every
-needle lands in its hatched target band. Early levels use one wide target. Later
-levels add more independent dimensions and narrow the bands from 40% to 20% of
-the scale. A successful phrase stays on screen for three seconds while the next
-level button fills; click it to move sooner, or let the game advance itself.
+Give it optional starting text, choose a tone dimension, and turn a 0–100 dial.
+An inexpensive language model rewrites the text while TypeSafe's Jev model
+scores each attempt. The closest version wins.
 
-The 30-point clock is a score, not a deadline. It stops at zero and play
-continues for as many attempts as needed.
+Panic starts at 60%, because the whole project began with a question:
 
-## How it works
+> Can this be inverted? Like I need to panic someone but only 60%?
 
-- The browser generates a repeatable ten-level challenge from a shareable seed.
-- Scoring is debounced while typing, and an outdated request is cancelled as
-  soon as the phrase changes.
-- One same-origin request sends the phrase and all active rubric keys.
-- A Python Cloudflare Worker makes one `typesafe/jev` request with the phrase as
-  the sole state and every active dimension as a parallel Score question.
-- The API returns structured scores and inspection metadata only. The game
-  never asks for or displays generated text.
-- The footer's Inspect API panel shows this browser session's real API and Jev
-  Score exchanges. Its in-memory log disappears on refresh.
-- No accounts, phrase history, database, or application secrets are required.
+## The loop
+
+1. If starting text exists, Jev scores it first.
+2. IBM Granite 4.0 H Micro receives the source, the target, and every previous
+   phrase with its real Jev score.
+3. Granite returns one short rewrite; Jev scores it on the selected five-anchor
+   rubric.
+4. The loop stops within five percentage points or after four total scores.
+5. The closest attempt is returned, even when none hits the tolerance.
+
+A source-based run therefore makes at most three writer calls and four Jev
+calls. A blank-source run makes at most four of each. Writer output is capped at
+96 tokens and every phrase at 240 characters.
+
+The writer is
+[`@cf/ibm-granite/granite-4.0-h-micro`](https://developers.cloudflare.com/workers-ai/models/granite-4.0-h-micro/),
+Cloudflare's least expensive listed text-generation model when this project was
+built. Jev remains the only scoring authority.
+
+## Architecture
+
+- React and Vite render a mobile-first single-dial interface.
+- `POST /api/tone` is a same-origin Python Cloudflare Worker endpoint.
+- The Worker uses the native Workers AI binding for both Granite and
+  `typesafe/jev`; there are no API keys in application code.
+- Native Cloudflare bindings allow six requests per browser session and thirty
+  aggregate requests per edge location each minute.
+- The browser stores only an opaque rate-limit session ID. The server stores no
+  phrases, generations, accounts, history, or analytics.
+
+The response includes the winning phrase, requested and measured percentages,
+and the complete attempt trail. The interface is deliberately honest about near
+misses and warns that AI can alter meaning as well as tone.
 
 ## Development
 
 Requires Node.js 20.19 or newer, Python 3.13 or newer, and
-[uv](https://docs.astral.sh/uv/).
+[`uv`](https://docs.astral.sh/uv/).
 
 ```bash
-npm install
-uv sync
-npm test
+npm ci
+uv sync --locked
+npm run format:check
 npm run lint:py
+npm test
 npm run typecheck
 npm run build
 uv run pywrangler dev
 ```
 
-The Workers AI binding is declared in `wrangler.jsonc`. Remote inference requires
-a Cloudflare account with Workers AI enabled.
+Workers AI runs remotely. The AI, static assets, and two rate-limit bindings are
+declared in `wrangler.jsonc`.
 
-Production deploys are currently intentional and manual: build, then run
-`uv run pywrangler deploy`. The Python Worker and React assets deploy as one
-unit, and its Custom Domain configuration owns `jev-tone.tomv.uk`. The manual
-GitHub Actions workflow is available once its Cloudflare credentials are stored
-as encrypted repository secrets.
+Production deployment is intentional and manual:
+
+```bash
+npm run build
+uv run pywrangler deploy
+```
+
+The Python Worker and React assets deploy as one unit, and the custom domain
+configuration owns `tone-jev.tomv.uk`. A manual GitHub Actions deployment is
+also included for use once repository Cloudflare credentials are configured.
 
 ## License
 

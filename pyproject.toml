@@ -1,7 +1,7 @@
 [project]
-name = "mind-your-tone"
+name = "tone-your-mind"
 version = "0.1.0"
-description = "Python Worker for the Mind Your Tone game"
+description = "Python Worker for the tone JEV feedback-loop writing tool"
 requires-python = ">=3.13"
 dependencies = []
 

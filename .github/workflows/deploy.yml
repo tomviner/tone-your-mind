@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy tone JEV
 
 on:
   workflow_dispatch:
