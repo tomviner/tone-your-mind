@@ -46,9 +46,6 @@
       }
     }
   ],
-  "limits": {
-    "subrequests": 10
-  },
   "observability": {
     "enabled": true
   }

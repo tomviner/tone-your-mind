@@ -81,6 +81,33 @@ class ToneContractTests(unittest.TestCase):
             with self.subTest(response=response), self.assertRaises(ValueError):
                 phrase_from_writer_response(response)
 
+    def test_writer_response_converts_cloudflare_js_dictionary(self):
+        class JsDict:
+            def __init__(self, value):
+                self.value = value
+
+            def get(self, key):
+                return self.value.get(key)
+
+        self.assertEqual(
+            phrase_from_writer_response(
+                JsDict(
+                    {
+                        "choices": [
+                            JsDict(
+                                {
+                                    "message": JsDict(
+                                        {"content": "Please read it immediately."}
+                                    )
+                                }
+                            )
+                        ]
+                    }
+                )
+            ),
+            "Please read it immediately.",
+        )
+
     def test_parses_direct_enveloped_and_property_backed_jev_responses(self):
         direct = jev_response(2.4, 0.81)
         expected = {"score": 2.4, "confidence": 0.81, "model": "jev-1.13.0"}
@@ -274,6 +301,33 @@ class ToneRequestTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(status, 502)
                 self.assertEqual(payload, {"error": "The tone loop lost the plot"})
                 self.assertNotIn("partial", str(payload).lower())
+
+    async def test_logs_failed_boundary_without_phrase_content(self):
+        async def invalid_writer(model, value):
+            return {"unexpected": "Please do not log this phrase"}
+
+        with self.assertLogs(level="ERROR") as writer_logs:
+            await tone_request(
+                {"source": "", "dimension": "panic", "target": 60},
+                "https://tone-jev.tomv.uk/api/tone",
+                "https://tone-jev.tomv.uk",
+                invalid_writer,
+            )
+        self.assertIn('"stage": "writer_parse"', writer_logs.output[0])
+        self.assertNotIn("Please do not log", writer_logs.output[0])
+
+        async def invalid_jev(model, value):
+            return {"answers": {}}
+
+        with self.assertLogs(level="ERROR") as jev_logs:
+            await tone_request(
+                {"source": "private source", "dimension": "panic", "target": 60},
+                "https://tone-jev.tomv.uk/api/tone",
+                "https://tone-jev.tomv.uk",
+                invalid_jev,
+            )
+        self.assertIn('"stage": "jev_parse"', jev_logs.output[0])
+        self.assertNotIn("private source", jev_logs.output[0])
 
 
 if __name__ == "__main__":

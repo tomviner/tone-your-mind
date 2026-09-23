@@ -19,8 +19,16 @@ AiRunner = Callable[[str, dict[str, Any]], Awaitable[Any]]
 
 
 def _field(value: Any, key: str) -> Any:
+    to_py = getattr(value, "to_py", None)
+    if callable(to_py):
+        converted = to_py()
+        if converted is not value:
+            return _field(converted, key)
     if isinstance(value, dict):
         return value.get(key)
+    get = getattr(value, "get", None)
+    if callable(get):
+        return get(key)
     try:
         return getattr(value, key)
     except (AttributeError, TypeError):
@@ -36,6 +44,16 @@ def _is_number(value: Any) -> bool:
         and isinstance(value, (int, float))
         and math.isfinite(value)
     )
+
+
+def _first(value: Any) -> Any:
+    try:
+        return value[0]
+    except (IndexError, KeyError, TypeError):
+        get = getattr(value, "get", None)
+        if callable(get):
+            return get(0)
+        return None
 
 
 def _origin(value: str) -> tuple[str, str, int]:
@@ -114,7 +132,12 @@ def build_writer_input(
 
 
 def phrase_from_writer_response(value: Any) -> str:
-    response = _field(_field(value, "result") or value, "response")
+    result = _field(value, "result") or value
+    response = _field(result, "response")
+    if not isinstance(response, str):
+        choice = _first(_field(result, "choices"))
+        message = _field(choice, "message")
+        response = _field(message, "content") or _field(choice, "text")
     if not isinstance(response, str):
         raise ValueError("writer returned an invalid response")
 
@@ -190,12 +213,15 @@ async def tone_request(
     target_score = target_percent / 25
     attempts: list[dict[str, Any]] = []
     scorer_model = None
+    stage = "setup"
+    failure_meta: dict[str, Any] = {}
 
     async def score_phrase(phrase: str) -> None:
-        nonlocal scorer_model
-        jev = score_from_jev_response(
-            await run_ai(JEV_MODEL, build_jev_input(phrase, dimension)), dimension
-        )
+        nonlocal scorer_model, stage
+        stage = "jev_inference"
+        response = await run_ai(JEV_MODEL, build_jev_input(phrase, dimension))
+        stage = "jev_parse"
+        jev = score_from_jev_response(response, dimension)
         scorer_model = jev["model"] or scorer_model
         attempts.append(
             {
@@ -213,16 +239,29 @@ async def tone_request(
             not attempts or abs(attempts[-1]["score"] - target_score) > TARGET_TOLERANCE
         ):
             writer_input = build_writer_input(source, dimension, target_score, attempts)
-            candidate = phrase_from_writer_response(
-                await run_ai(WRITER_MODEL, writer_input)
-            )
+            stage = "writer_inference"
+            response = await run_ai(WRITER_MODEL, writer_input)
+            stage = "writer_parse"
+            result_value = _field(response, "result")
+            response_value = _field(result_value or response, "response")
+            failure_meta = {
+                "writer_value_type": type(response).__name__,
+                "writer_result_type": type(result_value).__name__,
+                "writer_response_type": type(response_value).__name__,
+            }
+            if isinstance(response_value, str):
+                failure_meta["writer_response_length"] = len(response_value)
+            candidate = phrase_from_writer_response(response)
+            failure_meta = {}
             await score_phrase(candidate)
     except Exception as error:
         logging.error(
             json.dumps(
                 {
                     "event": "tone_loop_failed",
+                    "stage": stage,
                     "error_type": type(error).__name__,
+                    **failure_meta,
                 }
             )
         )
