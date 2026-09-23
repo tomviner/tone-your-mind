@@ -77,14 +77,19 @@ afterEach(() => {
   window.history.replaceState(null, "", "/");
 });
 
-describe("tone JEV", () => {
-  test("opens as the inverse tool with Panic at 60 percent", () => {
+describe("tone your mind", () => {
+  test("leads with the inverse action instead of the internal tone JEV name", () => {
     render(<App />);
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "tone JEV" }),
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Pick a tone. Let the machine write.",
+      }),
     ).toBeInTheDocument();
-    expect(screen.getByText("tone your mind")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "tone your mind home" }),
+    ).toHaveTextContent("tone your mind.");
     expect(screen.getByLabelText(/tone dimension/i)).toHaveValue("panic");
     expect(screen.getByRole("slider", { name: /panic level/i })).toHaveValue(
       "60",

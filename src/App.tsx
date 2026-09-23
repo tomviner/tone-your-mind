@@ -336,8 +336,8 @@ export default function App() {
   return (
     <main className="tool-shell">
       <header className="site-header">
-        <a className="wordmark" href="/" aria-label="tone JEV home">
-          tone <span>JEV</span>
+        <a className="wordmark" href="/" aria-label="tone your mind home">
+          tone your mind<span>.</span>
         </a>
         <a className="sibling-link" href="https://jev-tone.tomv.uk">
           play the original <span aria-hidden="true">↗</span>
@@ -345,11 +345,11 @@ export default function App() {
       </header>
 
       <section className="hero" aria-labelledby="page-title">
-        <p className="kicker">the machine plays the game now</p>
+        <p className="kicker">choose → written live → adjust</p>
         <h1 id="page-title">
-          <span>tone</span> <strong>JEV</strong>
+          Pick a tone.
+          <span>Let the machine write.</span>
         </h1>
-        <p className="strapline">tone your mind</p>
         <p className="lede">
           Need to panic someone, but only 60%? Pick a feeling, turn the dial,
           and let one AI rewrite while another marks its homework.
