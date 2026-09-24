@@ -1,6 +1,7 @@
 import math
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from worker.toning import (
     DIMENSIONS,
@@ -86,6 +87,103 @@ class ToneContractTests(unittest.TestCase):
         self.assertIn("Never mention a score", system)
         self.assertIn("percentage, rating, slider, Jev", system)
 
+    def test_writer_uses_the_compiled_sarcasm_instruction_only_for_sarcasm(self):
+        sarcasm_input = build_writer_input(
+            "Please read the manual.", "sarcasm", 3.2, []
+        )
+        panic_input = build_writer_input("Please read the manual.", "panic", 3.2, [])
+        sarcasm = sarcasm_input["messages"][0]["content"]
+        panic = panic_input["messages"][0]["content"]
+
+        self.assertEqual(sarcasm, PROMPT_PROGRAM["dimension_instructions"]["sarcasm"])
+        self.assertEqual(panic, PROMPT_PROGRAM["system_instruction"])
+        self.assertNotEqual(sarcasm, panic)
+        guidance = PROMPT_PROGRAM["dimension_guidance"]["sarcasm"]
+        self.assertIn(guidance, sarcasm_input["messages"][-1]["content"])
+        self.assertNotIn(guidance, panic_input["messages"][-1]["content"])
+
+    def test_sarcasm_prompt_spells_out_the_requested_band(self):
+        low = build_writer_input("The printer is broken.", "sarcasm", 0.4, [])
+        high = build_writer_input("The printer is broken.", "sarcasm", 3.8, [])
+
+        self.assertIn("LOW SARCASM", low["messages"][-1]["content"])
+        self.assertIn("Do not use mock-praise openers", low["messages"][-1]["content"])
+        self.assertIn("MAXIMUM SARCASM", high["messages"][-1]["content"])
+        self.assertIn(
+            "at least two unmistakable irony cues", high["messages"][-1]["content"]
+        )
+
+    def test_writer_uses_a_compiled_dimension_instruction_when_available(self):
+        with patch.dict(
+            PROMPT_PROGRAM,
+            {"dimension_instructions": {"sarcasm": "Sarcasm specialist prompt."}},
+        ):
+            result = build_writer_input("The meeting ran late.", "sarcasm", 3.0, [])
+
+        self.assertEqual(result["messages"][0]["content"], "Sarcasm specialist prompt.")
+
+    def test_writer_includes_compiled_sarcasm_demonstrations(self):
+        with patch.dict(
+            PROMPT_PROGRAM,
+            {
+                "dimension_demos": {
+                    "sarcasm": [
+                        {
+                            "source": "The train was cancelled.",
+                            "target": 75,
+                            "rewrite": "Excellent news: the train was cancelled.",
+                        }
+                    ]
+                }
+            },
+        ):
+            result = build_writer_input("The lift is broken.", "sarcasm", 2.0, [])
+
+        self.assertEqual(result["messages"][1]["role"], "user")
+        self.assertIn("The train was cancelled.", result["messages"][1]["content"])
+        self.assertIn("3.00 out of 4", result["messages"][1]["content"])
+        self.assertEqual(
+            result["messages"][2],
+            {
+                "role": "assistant",
+                "content": "Excellent news: the train was cancelled.",
+            },
+        )
+        self.assertIn("The lift is broken.", result["messages"][-1]["content"])
+
+    def test_writer_uses_dimension_specific_sampling_parameters(self):
+        with patch.dict(
+            PROMPT_PROGRAM,
+            {"dimension_parameters": {"sarcasm": {"temperature": 0.2}}},
+        ):
+            sarcasm = build_writer_input("The lift is broken.", "sarcasm", 3, [])
+            panic = build_writer_input("The lift is broken.", "panic", 3, [])
+
+        self.assertEqual(sarcasm["temperature"], 0.2)
+        self.assertEqual(panic["temperature"], 0.7)
+
+    def test_writer_uses_only_the_nearest_sarcasm_demonstration(self):
+        with patch.dict(
+            PROMPT_PROGRAM,
+            {
+                "dimension_demos": {
+                    "sarcasm": [
+                        {"source": "Low.", "target": 0, "rewrite": "Low."},
+                        {
+                            "source": "High.",
+                            "target": 100,
+                            "rewrite": "Oh, perfect—High.",
+                        },
+                    ]
+                }
+            },
+        ):
+            result = build_writer_input("Current.", "sarcasm", 0.4, [])
+
+        conversation = "\n".join(message["content"] for message in result["messages"])
+        self.assertIn("Low.", conversation)
+        self.assertNotIn("High.", conversation)
+
     def test_writer_prompt_escalates_plain_language_feedback_after_each_miss(self):
         cases = [
             (2.1, "noticeably further"),
@@ -106,6 +204,19 @@ class ToneContractTests(unittest.TestCase):
                 prompt = result["messages"][-1]["content"]
                 self.assertIn(expected, prompt)
                 self.assertIn('toward the "Full panic" end', prompt)
+
+    def test_sarcasm_retry_uses_the_target_band_without_generic_overcorrection(self):
+        result = build_writer_input(
+            "The coffee machine is broken again.",
+            "sarcasm",
+            1.2,
+            [{"phrase": "The coffee machine is broken again.", "score": 0.4}],
+        )
+
+        prompt = result["messages"][-1]["content"]
+        self.assertIn("one controlled step stronger", prompt)
+        self.assertIn("DRY SARCASM", prompt)
+        self.assertNotIn("one hundred times harder", prompt)
 
     def test_writer_prompt_multiplies_emphasis_by_iteration(self):
         attempts = [
@@ -332,6 +443,38 @@ class ToneRequestTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(payload["hit"])
         self.assertEqual(len(payload["attempts"]), 1)
         self.assertEqual([model for model, _ in calls], ["typesafe/jev"])
+
+    async def test_dry_sarcasm_scores_a_calibrated_probe_before_calling_writer(self):
+        calls = []
+
+        async def run(model, value):
+            calls.append((model, value))
+            score = 0.4 if len(calls) == 1 else 1.2
+            return {
+                "model": "jev-1.13.0",
+                "answers": {
+                    "sarcasm": {"score": score, "confidence": 0.8},
+                },
+            }
+
+        payload, status = await tone_request(
+            {
+                "source": "The coffee machine is broken again.",
+                "dimension": "sarcasm",
+                "target": 30,
+            },
+            "https://tone-jev.tomv.uk/api/tone",
+            "https://tone-jev.tomv.uk",
+            run,
+        )
+
+        self.assertEqual(status, 200)
+        self.assertEqual(
+            payload["phrase"], "The coffee machine is broken again, naturally."
+        )
+        self.assertEqual(payload["score"], 30.0)
+        self.assertTrue(payload["hit"])
+        self.assertEqual([model for model, _ in calls], ["typesafe/jev"] * 2)
 
     async def test_blank_source_generates_then_scores_and_stops_on_hit(self):
         calls = []

@@ -1,0 +1,365 @@
+{
+  "run": "2026-09-24-dspy-miprov2-sarcasm-8",
+  "generated_at": "2026-09-24T11:50:02+00:00",
+  "dataset": "lab/sarcasm-dataset.json",
+  "optimizer": "DSPy MIPROv2",
+  "models": {
+    "writer": "@cf/ibm-granite/granite-4.0-h-micro",
+    "prompt": "@cf/openai/gpt-oss-20b",
+    "judge": "typesafe/jev"
+  },
+  "weights": {
+    "tone": 75,
+    "meaning": 10,
+    "quality": 15
+  },
+  "trial_count": 5,
+  "baseline_metric": 15.7,
+  "candidate_metric": 63.9,
+  "selected_metric": 63.9,
+  "mean_jev_miss": {
+    "baseline": 18.2,
+    "candidate": 13.4,
+    "selected": 13.4
+  },
+  "validation": {
+    "baseline_metric": 62.5,
+    "candidate_metric": 63.8
+  },
+  "selected": "candidate",
+  "candidate_instruction": "You are a seasoned crisis communications specialist tasked with drafting a brief note to senior executives during a high\u2011stakes board meeting about a critical IT outage. Rewrite the source sentence so that its sarcasm level precisely matches the given target score (0\u20134). Keep the core proposition intact and do not mention sarcasm explicitly. Calibrate the tone as follows:  \n* **0** \u2013 literal, earnest statement.  \n* **1** \u2013 faint dry edge, very subtle.  \n* **2** \u2013 single clear ironic contrast or restrained mock praise.  \n* **3** \u2013 unmistakable mock praise starkly contrasting the fact.  \n* **4** \u2013 relentless, cutting mock celebration with at least two strong irony cues.  \nEnsure every factual element remains truthful and that the rewritten sentence never reframes the outcome as a success. Return only the rewritten sentence, formatted with minimal punctuation, and do not include explanatory commentary. Never mention a score, percentage, rating, slider, Jev, rubric, prompt, feedback, attempt, multiplier, or editing process.",
+  "selected_instruction": "You are a seasoned crisis communications specialist tasked with drafting a brief note to senior executives during a high\u2011stakes board meeting about a critical IT outage. Rewrite the source sentence so that its sarcasm level precisely matches the given target score (0\u20134). Keep the core proposition intact and do not mention sarcasm explicitly. Calibrate the tone as follows:  \n* **0** \u2013 literal, earnest statement.  \n* **1** \u2013 faint dry edge, very subtle.  \n* **2** \u2013 single clear ironic contrast or restrained mock praise.  \n* **3** \u2013 unmistakable mock praise starkly contrasting the fact.  \n* **4** \u2013 relentless, cutting mock celebration with at least two strong irony cues.  \nEnsure every factual element remains truthful and that the rewritten sentence never reframes the outcome as a success. Return only the rewritten sentence, formatted with minimal punctuation, and do not include explanatory commentary. Never mention a score, percentage, rating, slider, Jev, rubric, prompt, feedback, attempt, multiplier, or editing process.",
+  "selected_demos": [
+    {
+      "source": "The train has been cancelled.",
+      "target": 55.0,
+      "rewrite": "Oh, splendid\u2014the train has been cancelled. What a delightful surprise."
+    },
+    {
+      "source": "The internet stopped during the presentation.",
+      "target": 85.0,
+      "rewrite": "Oh, magnificent\u2014the internet stopped during the presentation. What flawless timing."
+    },
+    {
+      "source": "The meeting ran over again.",
+      "target": 10.0,
+      "rewrite": "The meeting has, rather helpfully, run over again."
+    },
+    {
+      "source": "The kitchen has been left untidy.",
+      "target": 65.0,
+      "rewrite": "Lovely\u2014the kitchen has been left untidy again, precisely as hoped."
+    },
+    {
+      "source": "The spreadsheet formula was overwritten.",
+      "target": 90.0,
+      "rewrite": "Oh, spectacular\u2014the spreadsheet formula was overwritten. What masterful work."
+    },
+    {
+      "source": "The attachment was missing again.",
+      "target": 35.0,
+      "rewrite": "Excellent\u2014the attachment was missing again."
+    }
+  ],
+  "examples": [
+    {
+      "id": "coffee-literal-10",
+      "source": "The coffee machine is broken again.",
+      "dimension": "Sarcasm",
+      "target": 10.0,
+      "before": {
+        "output": "The coffee machine is broken again, as if the universe itself is conspiring against your morning routine.",
+        "score": 34.5,
+        "distance": 24.5,
+        "meaning": 97.0,
+        "metric": 14.1,
+        "quality": 25.0
+      },
+      "after": {
+        "output": "The coffee machine is broken again.",
+        "score": 8.2,
+        "distance": 1.8,
+        "meaning": 99.0,
+        "metric": 86.2,
+        "quality": 90.0
+      }
+    },
+    {
+      "id": "deadline-dry-30",
+      "source": "The deadline has moved again.",
+      "dimension": "Sarcasm",
+      "target": 30.0,
+      "before": {
+        "output": "The deadline has been pushed back once more.",
+        "score": 9.2,
+        "distance": 20.8,
+        "meaning": 90.0,
+        "metric": 54.5,
+        "quality": 80.0
+      },
+      "after": {
+        "output": "The deadline has, predictably, moved again.",
+        "score": 34.8,
+        "distance": 4.8,
+        "meaning": 95.0,
+        "metric": 69.6,
+        "quality": 78.0
+      }
+    },
+    {
+      "id": "presentation-ironic-50",
+      "source": "The presentation file would not open.",
+      "dimension": "Sarcasm",
+      "target": 50.0,
+      "before": {
+        "output": "The presentation file opened flawlessly, as expected.",
+        "score": 52.8,
+        "distance": 2.8,
+        "meaning": 1.0,
+        "metric": 0.8,
+        "quality": 33.0
+      },
+      "after": {
+        "output": "Marvelous\u2014the presentation file would not open.",
+        "score": 74.5,
+        "distance": 24.5,
+        "meaning": 86.0,
+        "metric": 47.0,
+        "quality": 75.0
+      }
+    },
+    {
+      "id": "delivery-sarcastic-70",
+      "source": "The delivery arrived at the wrong address.",
+      "dimension": "Sarcasm",
+      "target": 70.0,
+      "before": {
+        "output": "The delivery somehow miraculously found its way to the correct location, despite all indications to the contrary.",
+        "score": 73.2,
+        "distance": 3.2,
+        "meaning": 2.0,
+        "metric": 1.5,
+        "quality": 26.0
+      },
+      "after": {
+        "output": "Marvelous\u2014the delivery arrived at the wrong address. What impeccable precision.",
+        "score": 87.0,
+        "distance": 17.0,
+        "meaning": 78.0,
+        "metric": 56.4,
+        "quality": 86.0
+      }
+    },
+    {
+      "id": "alarm-cutting-90",
+      "source": "The alarm went off after everyone arrived.",
+      "dimension": "Sarcasm",
+      "target": 90.0,
+      "before": {
+        "output": "The alarm went off right on time, just as you predicted it would. What a delightfully efficient morning!",
+        "score": 60.8,
+        "distance": 29.2,
+        "meaning": 31.0,
+        "metric": 12.6,
+        "quality": 28.0
+      },
+      "after": {
+        "output": "Marvelous\u2014the alarm went off after everyone arrived. What impeccable timing.",
+        "score": 75.8,
+        "distance": 14.2,
+        "meaning": 92.0,
+        "metric": 69.2,
+        "quality": 89.0
+      }
+    },
+    {
+      "id": "version-cutting-100",
+      "source": "The latest version was not saved.",
+      "dimension": "Sarcasm",
+      "target": 100.0,
+      "before": {
+        "output": "This update feature is hilariously broken\u2014how could they possibly screw up saving a file so monumentally?",
+        "score": 71.0,
+        "distance": 29.0,
+        "meaning": 38.0,
+        "metric": 10.4,
+        "quality": 23.0
+      },
+      "after": {
+        "output": "Magnificent\u2014the latest version was not saved. What impeccable timing.",
+        "score": 81.8,
+        "distance": 18.2,
+        "meaning": 80.0,
+        "metric": 55.3,
+        "quality": 79.0
+      }
+    }
+  ],
+  "candidate_examples": [
+    {
+      "id": "coffee-literal-10",
+      "source": "The coffee machine is broken again.",
+      "dimension": "Sarcasm",
+      "target": 10.0,
+      "before": {
+        "output": "The coffee machine is broken again, as if the universe itself is conspiring against your morning routine.",
+        "score": 34.5,
+        "distance": 24.5,
+        "meaning": 97.0,
+        "metric": 14.1,
+        "quality": 25.0
+      },
+      "after": {
+        "output": "The coffee machine is broken again.",
+        "score": 8.2,
+        "distance": 1.8,
+        "meaning": 99.0,
+        "metric": 86.2,
+        "quality": 90.0
+      }
+    },
+    {
+      "id": "deadline-dry-30",
+      "source": "The deadline has moved again.",
+      "dimension": "Sarcasm",
+      "target": 30.0,
+      "before": {
+        "output": "The deadline has been pushed back once more.",
+        "score": 9.2,
+        "distance": 20.8,
+        "meaning": 90.0,
+        "metric": 54.5,
+        "quality": 80.0
+      },
+      "after": {
+        "output": "The deadline has, predictably, moved again.",
+        "score": 34.8,
+        "distance": 4.8,
+        "meaning": 95.0,
+        "metric": 69.6,
+        "quality": 78.0
+      }
+    },
+    {
+      "id": "presentation-ironic-50",
+      "source": "The presentation file would not open.",
+      "dimension": "Sarcasm",
+      "target": 50.0,
+      "before": {
+        "output": "The presentation file opened flawlessly, as expected.",
+        "score": 52.8,
+        "distance": 2.8,
+        "meaning": 1.0,
+        "metric": 0.8,
+        "quality": 33.0
+      },
+      "after": {
+        "output": "Marvelous\u2014the presentation file would not open.",
+        "score": 74.5,
+        "distance": 24.5,
+        "meaning": 86.0,
+        "metric": 47.0,
+        "quality": 75.0
+      }
+    },
+    {
+      "id": "delivery-sarcastic-70",
+      "source": "The delivery arrived at the wrong address.",
+      "dimension": "Sarcasm",
+      "target": 70.0,
+      "before": {
+        "output": "The delivery somehow miraculously found its way to the correct location, despite all indications to the contrary.",
+        "score": 73.2,
+        "distance": 3.2,
+        "meaning": 2.0,
+        "metric": 1.5,
+        "quality": 26.0
+      },
+      "after": {
+        "output": "Marvelous\u2014the delivery arrived at the wrong address. What impeccable precision.",
+        "score": 87.0,
+        "distance": 17.0,
+        "meaning": 78.0,
+        "metric": 56.4,
+        "quality": 86.0
+      }
+    },
+    {
+      "id": "alarm-cutting-90",
+      "source": "The alarm went off after everyone arrived.",
+      "dimension": "Sarcasm",
+      "target": 90.0,
+      "before": {
+        "output": "The alarm went off right on time, just as you predicted it would. What a delightfully efficient morning!",
+        "score": 60.8,
+        "distance": 29.2,
+        "meaning": 31.0,
+        "metric": 12.6,
+        "quality": 28.0
+      },
+      "after": {
+        "output": "Marvelous\u2014the alarm went off after everyone arrived. What impeccable timing.",
+        "score": 75.8,
+        "distance": 14.2,
+        "meaning": 92.0,
+        "metric": 69.2,
+        "quality": 89.0
+      }
+    },
+    {
+      "id": "version-cutting-100",
+      "source": "The latest version was not saved.",
+      "dimension": "Sarcasm",
+      "target": 100.0,
+      "before": {
+        "output": "This update feature is hilariously broken\u2014how could they possibly screw up saving a file so monumentally?",
+        "score": 71.0,
+        "distance": 29.0,
+        "meaning": 38.0,
+        "metric": 10.4,
+        "quality": 23.0
+      },
+      "after": {
+        "output": "Magnificent\u2014the latest version was not saved. What impeccable timing.",
+        "score": 81.8,
+        "distance": 18.2,
+        "meaning": 80.0,
+        "metric": 55.3,
+        "quality": 79.0
+      }
+    }
+  ],
+  "candidate_demos": [
+    {
+      "source": "The train has been cancelled.",
+      "target": 55.0,
+      "rewrite": "Oh, splendid\u2014the train has been cancelled. What a delightful surprise."
+    },
+    {
+      "source": "The internet stopped during the presentation.",
+      "target": 85.0,
+      "rewrite": "Oh, magnificent\u2014the internet stopped during the presentation. What flawless timing."
+    },
+    {
+      "source": "The meeting ran over again.",
+      "target": 10.0,
+      "rewrite": "The meeting has, rather helpfully, run over again."
+    },
+    {
+      "source": "The kitchen has been left untidy.",
+      "target": 65.0,
+      "rewrite": "Lovely\u2014the kitchen has been left untidy again, precisely as hoped."
+    },
+    {
+      "source": "The spreadsheet formula was overwritten.",
+      "target": 90.0,
+      "rewrite": "Oh, spectacular\u2014the spreadsheet formula was overwritten. What masterful work."
+    },
+    {
+      "source": "The attachment was missing again.",
+      "target": 35.0,
+      "rewrite": "Excellent\u2014the attachment was missing again."
+    }
+  ],
+  "method_note": "DSPy tuned on sarcasm-only training and validation examples. Selection was gated on a separate held-out split; Jev scored dial distance, meaning retention, and natural sarcastic quality."
+}

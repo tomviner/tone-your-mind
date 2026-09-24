@@ -89,5 +89,47 @@
     "source": "Please review the document.",
     "dimension": "formality",
     "target": 20
+  },
+  {
+    "id": "generic-sarcasm-literal-10",
+    "split": "train",
+    "source": "The printer is working again.",
+    "dimension": "sarcasm",
+    "target": 10
+  },
+  {
+    "id": "generic-sarcasm-ironic-50",
+    "split": "train",
+    "source": "The train has been cancelled.",
+    "dimension": "sarcasm",
+    "target": 50
+  },
+  {
+    "id": "generic-sarcasm-cutting-90",
+    "split": "train",
+    "source": "The spreadsheet formula was overwritten.",
+    "dimension": "sarcasm",
+    "target": 90
+  },
+  {
+    "id": "generic-sarcasm-dry-20",
+    "split": "eval",
+    "source": "The email arrived this morning.",
+    "dimension": "sarcasm",
+    "target": 20
+  },
+  {
+    "id": "generic-sarcasm-middle-50",
+    "split": "eval",
+    "source": "The lift is out of order.",
+    "dimension": "sarcasm",
+    "target": 50
+  },
+  {
+    "id": "generic-sarcasm-high-80",
+    "split": "eval",
+    "source": "The booking was cancelled.",
+    "dimension": "sarcasm",
+    "target": 80
   }
 ]

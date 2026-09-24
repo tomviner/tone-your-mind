@@ -1,5 +1,5 @@
 {
-  "version": "dspy-2026-09-24.3",
+  "version": "dspy-2026-09-24.8",
   "optimizer": "DSPy MIPROv2",
   "writer_model": "@cf/ibm-granite/granite-4.0-h-micro",
   "judge_model": "typesafe/jev",
@@ -35,5 +35,53 @@
     "The previous correction failed. Be emphatic, insistent, and far less restrained than feels natural.",
     "FINAL ATTEMPT. Be melodramatic, superlative, relentless, and almost absurdly explicit. Overcorrect with maximum force; subtlety has completely failed."
   ],
-  "optimizer_run": "2026-09-24-dspy-miprov2-round-3"
+  "optimizer_run": "2026-09-24-dspy-miprov2-round-3",
+  "dimension_instructions": {
+    "sarcasm": "You are a seasoned crisis communications specialist tasked with drafting a brief note to senior executives during a high\u2011stakes board meeting about a critical IT outage. Rewrite the source sentence so that its sarcasm level precisely matches the given target score (0\u20134). Keep the core proposition intact and do not mention sarcasm explicitly. Calibrate the tone as follows:  \n* **0** \u2013 literal, earnest statement.  \n* **1** \u2013 faint dry edge, very subtle.  \n* **2** \u2013 single clear ironic contrast or restrained mock praise.  \n* **3** \u2013 unmistakable mock praise starkly contrasting the fact.  \n* **4** \u2013 relentless, cutting mock celebration with at least two strong irony cues.  \nEnsure every factual element remains truthful and that the rewritten sentence never reframes the outcome as a success. Return only the rewritten sentence, formatted with minimal punctuation, and do not include explanatory commentary. Never mention a score, percentage, rating, slider, Jev, rubric, prompt, feedback, attempt, multiplier, or editing process."
+  },
+  "dimension_optimizer_runs": {
+    "sarcasm": "2026-09-24-dspy-miprov2-sarcasm-8"
+  },
+  "dimension_guidance": {
+    "sarcasm": "Create sarcasm through contextual irony, dry contrast, understatement, mock praise, or exaggerated celebration. Keep every source fact and requested action true: never negate or reverse them. Never label the wording as ironic or sarcastic, and never invent incompetence, laziness, blame, or a personal attack."
+  },
+  "dimension_demos": {
+    "sarcasm": [
+      {
+        "source": "The train has been cancelled.",
+        "target": 55.0,
+        "rewrite": "Oh, splendid\u2014the train has been cancelled. What a delightful surprise."
+      },
+      {
+        "source": "The internet stopped during the presentation.",
+        "target": 85.0,
+        "rewrite": "Oh, magnificent\u2014the internet stopped during the presentation. What flawless timing."
+      },
+      {
+        "source": "The meeting ran over again.",
+        "target": 10.0,
+        "rewrite": "The meeting has, rather helpfully, run over again."
+      },
+      {
+        "source": "The kitchen has been left untidy.",
+        "target": 65.0,
+        "rewrite": "Lovely\u2014the kitchen has been left untidy again, precisely as hoped."
+      },
+      {
+        "source": "The spreadsheet formula was overwritten.",
+        "target": 90.0,
+        "rewrite": "Oh, spectacular\u2014the spreadsheet formula was overwritten. What masterful work."
+      },
+      {
+        "source": "The attachment was missing again.",
+        "target": 35.0,
+        "rewrite": "Excellent\u2014the attachment was missing again."
+      }
+    ]
+  },
+  "dimension_parameters": {
+    "sarcasm": {
+      "temperature": 0.2
+    }
+  }
 }

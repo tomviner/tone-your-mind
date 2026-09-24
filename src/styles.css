@@ -1009,6 +1009,37 @@ blockquote {
   line-height: 1.65;
 }
 
+.specialist-section {
+  border-top: 2px solid var(--ink);
+  padding-top: clamp(34px, 7vw, 62px);
+}
+
+.specialist-lede {
+  max-width: 760px;
+  margin: -8px 0 26px;
+  color: #46514b;
+  font-size: clamp(1rem, 2.4vw, 1.18rem);
+  line-height: 1.55;
+}
+
+.specialist-prompt {
+  margin: 28px 0;
+  border-left: 6px solid var(--lilac);
+  background: rgb(255 250 242 / 80%);
+  padding: clamp(18px, 4vw, 28px);
+}
+
+.specialist-prompt h3 {
+  margin: 0 0 14px;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.specialist-prompt .prompt-quote {
+  font-size: clamp(0.78rem, 2vw, 0.98rem);
+}
+
 .example-table-wrap {
   overflow-x: auto;
   border: 2px solid var(--ink);

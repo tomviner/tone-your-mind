@@ -82,12 +82,18 @@ writing prompt from the per-message live retries. Production imports
 `worker/prompt_program.json`, the same versioned artifact shown by the lab; it
 does not maintain a hidden second prompt.
 
-The offline compiler uses DSPy MIPROv2 with Granite as both task and prompt
-model. Jev reviews each candidate with two questions in one call: the requested
-tone as a five-anchor score, and meaning retention as a Noul probability. Large
-tone misses are squared so one severe failure matters more than several small
-gains. Only `lab/dataset.json` is used; user text and production logs are never
-training data.
+The general offline compiler uses DSPy MIPROv2 with Granite as both task and
+prompt model. Jev reviews each candidate with two questions in one call: the
+requested tone as a five-anchor score, and meaning retention as a Noul
+probability. Large tone misses are squared so one severe failure matters more
+than several small gains.
+
+Sarcasm has its own DSPy pass because the general prompt performed badly on
+that dimension. Granite remains the writer, GPT-OSS 20B proposes instructions,
+and Jev adds a third irony-quality review so ordinary hostility does not win by
+accident. The candidate must beat the baseline on both a tuning split and a
+separate held-out split before it is published. These runs use only the fixed
+files in `lab/`; user text and production logs are never training data.
 
 To reproduce and publish a five-trial run:
 
@@ -97,6 +103,9 @@ export CLOUDFLARE_API_TOKEN=…
 # Optional; defaults to the account's `default` AI Gateway.
 export CLOUDFLARE_AI_GATEWAY_ID=…
 uv run --group lab python -m lab.optimize --trials 5 --publish
+
+# Reproduce the dedicated sarcasm optimisation.
+uv run --group lab python -m lab.optimize --dimension sarcasm --trials 5 --publish
 ```
 
 ## Development

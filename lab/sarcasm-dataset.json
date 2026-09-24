@@ -1,0 +1,182 @@
+[
+  {
+    "id": "printer-literal-0",
+    "split": "train",
+    "source": "The printer has jammed again.",
+    "dimension": "sarcasm",
+    "target": 0,
+    "rewrite": "The printer has jammed again."
+  },
+  {
+    "id": "meeting-dry-10",
+    "split": "train",
+    "source": "The meeting ran over again.",
+    "dimension": "sarcasm",
+    "target": 10,
+    "rewrite": "The meeting has, rather helpfully, run over again."
+  },
+  {
+    "id": "report-dry-20",
+    "split": "train",
+    "source": "The report was submitted late.",
+    "dimension": "sarcasm",
+    "target": 20,
+    "rewrite": "Naturally, the report was submitted late."
+  },
+  {
+    "id": "picnic-ironic-25",
+    "split": "train",
+    "source": "The forecast says rain for the picnic.",
+    "dimension": "sarcasm",
+    "target": 25,
+    "rewrite": "Perfect picnic weather: the forecast says rain."
+  },
+  {
+    "id": "attachment-ironic-35",
+    "split": "train",
+    "source": "The attachment was missing again.",
+    "dimension": "sarcasm",
+    "target": 35,
+    "rewrite": "Excellent—the attachment was missing again."
+  },
+  {
+    "id": "update-ironic-45",
+    "split": "train",
+    "source": "The software update broke the login screen.",
+    "dimension": "sarcasm",
+    "target": 45,
+    "rewrite": "Brilliant update—the login screen no longer works. Excellent progress."
+  },
+  {
+    "id": "train-sarcastic-55",
+    "split": "train",
+    "source": "The train has been cancelled.",
+    "dimension": "sarcasm",
+    "target": 55,
+    "rewrite": "Wonderful—the train has been cancelled. Perfect."
+  },
+  {
+    "id": "kitchen-sarcastic-65",
+    "split": "train",
+    "source": "The kitchen has been left untidy.",
+    "dimension": "sarcasm",
+    "target": 65,
+    "rewrite": "Lovely—the kitchen has been left untidy again, precisely as hoped."
+  },
+  {
+    "id": "parcel-sarcastic-75",
+    "split": "train",
+    "source": "The parcel arrived after the event.",
+    "dimension": "sarcasm",
+    "target": 75,
+    "rewrite": "Oh, excellent—the parcel arrived after the event. Impeccable timing."
+  },
+  {
+    "id": "internet-cutting-85",
+    "split": "train",
+    "source": "The internet stopped during the presentation.",
+    "dimension": "sarcasm",
+    "target": 85,
+    "rewrite": "Oh, magnificent—the internet stopped during the presentation. What flawless timing."
+  },
+  {
+    "id": "spreadsheet-cutting-90",
+    "split": "train",
+    "source": "The spreadsheet formula was overwritten.",
+    "dimension": "sarcasm",
+    "target": 90,
+    "rewrite": "Oh, spectacular—the spreadsheet formula was overwritten. What masterful work."
+  },
+  {
+    "id": "deadline-cutting-100",
+    "split": "train",
+    "source": "You replied after the deadline.",
+    "dimension": "sarcasm",
+    "target": 100,
+    "rewrite": "Oh, absolutely magnificent—you replied after the deadline. Truly, nothing says urgency like waiting until it was over."
+  },
+  {
+    "id": "room-literal-0",
+    "split": "val",
+    "source": "The room was double-booked.",
+    "dimension": "sarcasm",
+    "target": 0
+  },
+  {
+    "id": "email-dry-20",
+    "split": "val",
+    "source": "The email arrived a day late.",
+    "dimension": "sarcasm",
+    "target": 20
+  },
+  {
+    "id": "lift-ironic-50",
+    "split": "val",
+    "source": "The lift is out of order.",
+    "dimension": "sarcasm",
+    "target": 50
+  },
+  {
+    "id": "document-sarcastic-65",
+    "split": "val",
+    "source": "You brought the wrong document.",
+    "dimension": "sarcasm",
+    "target": 65
+  },
+  {
+    "id": "booking-sarcastic-80",
+    "split": "val",
+    "source": "The booking was cancelled.",
+    "dimension": "sarcasm",
+    "target": 80
+  },
+  {
+    "id": "restart-cutting-100",
+    "split": "val",
+    "source": "The computer restarted during the call.",
+    "dimension": "sarcasm",
+    "target": 100
+  },
+  {
+    "id": "coffee-literal-10",
+    "split": "eval",
+    "source": "The coffee machine is broken again.",
+    "dimension": "sarcasm",
+    "target": 10
+  },
+  {
+    "id": "deadline-dry-30",
+    "split": "eval",
+    "source": "The deadline has moved again.",
+    "dimension": "sarcasm",
+    "target": 30
+  },
+  {
+    "id": "presentation-ironic-50",
+    "split": "eval",
+    "source": "The presentation file would not open.",
+    "dimension": "sarcasm",
+    "target": 50
+  },
+  {
+    "id": "delivery-sarcastic-70",
+    "split": "eval",
+    "source": "The delivery arrived at the wrong address.",
+    "dimension": "sarcasm",
+    "target": 70
+  },
+  {
+    "id": "alarm-cutting-90",
+    "split": "eval",
+    "source": "The alarm went off after everyone arrived.",
+    "dimension": "sarcasm",
+    "target": 90
+  },
+  {
+    "id": "version-cutting-100",
+    "split": "eval",
+    "source": "The latest version was not saved.",
+    "dimension": "sarcasm",
+    "target": 100
+  }
+]

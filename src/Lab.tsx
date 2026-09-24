@@ -1,7 +1,12 @@
 import results from "./lab-results.json";
+import sarcasmResults from "./sarcasm-lab-results.json";
 import promptProgram from "../worker/prompt_program.json";
 
 const formatPoints = (value: number) => `${value.toFixed(1)}%`;
+const sarcasmExamples =
+  sarcasmResults.selected === "candidate"
+    ? sarcasmResults.candidate_examples
+    : sarcasmResults.examples;
 
 export default function Lab() {
   return (
@@ -127,6 +132,116 @@ export default function Lab() {
         </p>
       </section>
 
+      <section
+        className="lab-section specialist-section"
+        aria-labelledby="sarcasm-title"
+      >
+        <p className="kicker">dimension-specific DSPy pass</p>
+        <h2 id="sarcasm-title">Sarcasm specialist.</h2>
+        <p className="specialist-lede">
+          The general prompt was particularly bad at sarcasm, so this run used a
+          sarcasm-only training set, a separate tuning split, and these
+          untouched held-out examples. DSPy changed the instruction and chose
+          examples for Granite; Jev remained the judge.
+        </p>
+        <div className="metric-grid" aria-label="Sarcasm optimisation results">
+          <article className="metric-card">
+            <span>held-out objective</span>
+            <strong>
+              {sarcasmResults.baseline_metric.toFixed(1)} →{" "}
+              {sarcasmResults.selected_metric.toFixed(1)}
+            </strong>
+            <p>Before and after DSPy on examples it did not train on.</p>
+          </article>
+          <article className="metric-card">
+            <span>mean Jev miss</span>
+            <strong>
+              {sarcasmResults.mean_jev_miss.baseline.toFixed(1)} →{" "}
+              {sarcasmResults.mean_jev_miss.selected.toFixed(1)}
+            </strong>
+            <p>
+              The single-pass candidate overshot the low end, so this result
+              directly triggered target-band routing in the live loop.
+            </p>
+          </article>
+          <article className="metric-card metric-card-accent">
+            <span>decision</span>
+            <strong>{sarcasmResults.selected}</strong>
+            <p>
+              A candidate ships only after beating the baseline on both unseen
+              evaluation splits.
+            </p>
+          </article>
+        </div>
+
+        <div className="specialist-prompt">
+          <h3>The sarcasm instruction Granite now gets</h3>
+          <blockquote className="prompt-quote">
+            {sarcasmResults.selected_instruction}
+          </blockquote>
+        </div>
+
+        <div className="example-table-wrap">
+          <table className="example-table">
+            <thead>
+              <tr>
+                <th>Request</th>
+                <th>Before sarcasm DSPy</th>
+                <th>After sarcasm DSPy</th>
+                <th>Jev target</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sarcasmExamples.map((example) => (
+                <tr key={example.id}>
+                  <td>
+                    <strong>{example.dimension}</strong>
+                    <span>“{example.source}”</span>
+                  </td>
+                  <td>
+                    <span className="comparison-output">
+                      {example.before.output}
+                    </span>
+                    <span className="comparison-score">
+                      Jev{" "}
+                      <span className="jev-number">
+                        {formatPoints(example.before.score)}
+                      </span>{" "}
+                      · quality {formatPoints(example.before.quality)}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="comparison-output">
+                      {example.after.output}
+                    </span>
+                    <span className="comparison-score">
+                      Jev{" "}
+                      <span className="jev-number">
+                        {formatPoints(example.after.score)}
+                      </span>{" "}
+                      · quality {formatPoints(example.after.quality)}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="jev-number">
+                      {formatPoints(example.target)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="lab-note">
+          Every coral number is on the same Jev scale: closer to the target is
+          better; higher is not. “Quality” is a separate yes/no probability that
+          rejects plain hostility masquerading as sarcasm. Production also
+          labels the requested band explicitly and supplies only the nearest
+          calibrated example from the DSPy bank and live Jev checks, so high
+          examples do not pull low targets upward.
+        </p>
+      </section>
+
       <section className="lab-section" aria-labelledby="prompt-title">
         <p className="kicker">deployed instruction</p>
         <h2 id="prompt-title">What Granite is actually told.</h2>
@@ -216,9 +331,16 @@ export default function Lab() {
             uv run --group lab python -m lab.optimize --trials 5 --publish
           </code>
         </pre>
+        <pre>
+          <code>
+            uv run --group lab python -m lab.optimize --dimension sarcasm
+            --trials 5 --publish
+          </code>
+        </pre>
         <p>
           The command needs a Cloudflare account ID and API token with Workers
-          AI access. It reads <code>lab/dataset.json</code>, never user traffic.
+          AI access. It reads the fixed datasets in <code>lab/</code>, never
+          user traffic.
         </p>
       </section>
 

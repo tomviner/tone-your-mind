@@ -123,6 +123,9 @@ describe("tone your mind", () => {
       screen.getByRole("columnheader", { name: /after DSPy/i }),
     ).toBeInTheDocument();
     expect(screen.getByText(/62.2 → 69.3/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /Sarcasm specialist/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "source" })).toHaveAttribute(
       "href",
       "https://github.com/tomviner/tone-your-mind",
@@ -134,8 +137,8 @@ describe("tone your mind", () => {
     render(<App />);
 
     expect(
-      screen.getByRole("columnheader", { name: "Jev target" }),
-    ).toBeInTheDocument();
+      screen.getAllByRole("columnheader", { name: "Jev target" }),
+    ).toHaveLength(2);
     expect(screen.getByLabelText("Jev score 12.0%")).toHaveClass("jev-number");
     expect(screen.getByLabelText("Jev target 70.0%")).toHaveClass("jev-number");
     expect(screen.getByText("meaning 92.0%")).not.toHaveClass("jev-number");
