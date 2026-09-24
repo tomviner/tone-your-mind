@@ -145,7 +145,7 @@ export default function Lab() {
                 <th>Request</th>
                 <th>Before DSPy</th>
                 <th>After DSPy</th>
-                <th>Target</th>
+                <th>Jev target</th>
               </tr>
             </thead>
             <tbody>
@@ -160,8 +160,17 @@ export default function Lab() {
                       {example.before.output}
                     </span>
                     <span className="comparison-score">
-                      Jev {formatPoints(example.before.score)} · meaning{" "}
-                      {formatPoints(example.before.meaning)}
+                      <span aria-hidden="true">Jev </span>
+                      <span
+                        className="jev-number"
+                        aria-label={`Jev score ${formatPoints(example.before.score)}`}
+                      >
+                        {formatPoints(example.before.score)}
+                      </span>{" "}
+                      ·{" "}
+                      <span>
+                        meaning {formatPoints(example.before.meaning)}
+                      </span>
                     </span>
                   </td>
                   <td>
@@ -169,11 +178,25 @@ export default function Lab() {
                       {example.after.output}
                     </span>
                     <span className="comparison-score">
-                      Jev {formatPoints(example.after.score)} · meaning{" "}
-                      {formatPoints(example.after.meaning)}
+                      <span aria-hidden="true">Jev </span>
+                      <span
+                        className="jev-number"
+                        aria-label={`Jev score ${formatPoints(example.after.score)}`}
+                      >
+                        {formatPoints(example.after.score)}
+                      </span>{" "}
+                      ·{" "}
+                      <span>meaning {formatPoints(example.after.meaning)}</span>
                     </span>
                   </td>
-                  <td>{formatPoints(example.target)}</td>
+                  <td>
+                    <span
+                      className="jev-number"
+                      aria-label={`Jev target ${formatPoints(example.target)}`}
+                    >
+                      {formatPoints(example.target)}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -129,6 +129,18 @@ describe("tone your mind", () => {
     );
   });
 
+  test("identifies measured and target percentages as the same Jev scale", () => {
+    window.history.replaceState(null, "", "/lab");
+    render(<App />);
+
+    expect(
+      screen.getByRole("columnheader", { name: "Jev target" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Jev score 12.0%")).toHaveClass("jev-number");
+    expect(screen.getByLabelText("Jev target 70.0%")).toHaveClass("jev-number");
+    expect(screen.getByText("meaning 92.0%")).not.toHaveClass("jev-number");
+  });
+
   test("hands the current starting text back to the original game", () => {
     render(<App />);
 

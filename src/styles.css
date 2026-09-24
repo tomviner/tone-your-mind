@@ -1073,6 +1073,11 @@ blockquote {
   white-space: nowrap;
 }
 
+.jev-number {
+  color: var(--coral-dark);
+  font-weight: 950;
+}
+
 .example-table td:nth-child(3) {
   background: rgb(225 255 242 / 42%);
 }
