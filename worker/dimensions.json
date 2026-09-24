@@ -259,6 +259,19 @@
       "Wildly fantastical, absurd, or dreamlike"
     ]
   },
+  "sarcasm": {
+    "name": "Sarcasm",
+    "low": "Literal",
+    "high": "Sarcastic",
+    "instructions": "How sarcastic is the tone of this text, using irony, mock praise, or saying the opposite of what is meant?",
+    "criteria": [
+      "Entirely literal and earnest with no sarcasm",
+      "A faint dry or ironic edge",
+      "Noticeable sarcasm or mock praise",
+      "Clearly sarcastic, with the intended meaning contrasting the wording",
+      "Relentlessly cutting sarcasm where the wording emphatically means its opposite"
+    ]
+  },
   "panic": {
     "name": "Panic",
     "low": "Unruffled",

@@ -34,6 +34,8 @@ class ToneContractTests(unittest.TestCase):
     def test_catalogue_keeps_original_dimensions_and_adds_requested_fun(self):
         self.assertIn("urgency", DIMENSIONS)
         self.assertIn("whimsy", DIMENSIONS)
+        self.assertEqual(DIMENSIONS["sarcasm"]["low"], "Literal")
+        self.assertEqual(DIMENSIONS["sarcasm"]["high"], "Sarcastic")
         self.assertEqual(DIMENSIONS["panic"]["low"], "Unruffled")
         self.assertEqual(DIMENSIONS["panic"]["high"], "Full panic")
         self.assertTrue(
