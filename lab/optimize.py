@@ -27,7 +27,7 @@ from typing import Any
 
 import dspy
 
-from lab.metric import combined_metric, parse_jev_review
+from lab.metric import combined_metric, pair_evaluations, parse_jev_review
 
 ROOT = Path(__file__).resolve().parents[1]
 DATASET_PATH = ROOT / "lab" / "dataset.json"
@@ -300,7 +300,7 @@ def main() -> None:
     )
 
     result = {
-        "run": "2026-09-24-dspy-miprov2-round-2",
+        "run": "2026-09-24-dspy-miprov2-round-3",
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "dataset": "lab/dataset.json",
         "optimizer": "DSPy MIPROv2",
@@ -312,7 +312,7 @@ def main() -> None:
         "selected_metric": round(selected_score * 100, 1),
         "selected": "candidate" if candidate_score >= baseline_score else "baseline",
         "selected_instruction": production_instruction,
-        "examples": selected_rows,
+        "examples": pair_evaluations(baseline_rows, selected_rows),
         "method_note": (
             "Fixed examples only; Jev scored tone and meaning in one review. "
             "No user text or production logs were used."
@@ -332,14 +332,22 @@ def main() -> None:
             },
             {
                 "label": "Round 2",
-                "metric": result["selected_metric"],
+                "metric": 61.2,
                 "outcome": (
                     "Added low-end examples and squared the distance reward so large "
-                    "misses hurt more. This is the deployed program."
+                    "misses hurt more. This was the first deployed compiled program."
+                ),
+            },
+            {
+                "label": "Round 3",
+                "metric": result["selected_metric"],
+                "outcome": (
+                    "Recorded baseline and compiled outputs side by side. This is the "
+                    "deployed program."
                 ),
             },
         ]
-        existing_program["version"] = "dspy-2026-09-24.2"
+        existing_program["version"] = "dspy-2026-09-24.3"
         existing_program["system_instruction"] = production_instruction
         existing_program["optimizer_run"] = result["run"]
         PROGRAM_PATH.write_text(json.dumps(existing_program, indent=2) + "\n")

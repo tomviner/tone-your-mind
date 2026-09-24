@@ -3,6 +3,28 @@
 from typing import Any
 
 
+def pair_evaluations(
+    baseline: list[dict[str, Any]], selected: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Pair the same held-out examples before and after prompt optimisation."""
+    selected_by_id = {row["id"]: row for row in selected}
+    if set(selected_by_id) != {row["id"] for row in baseline}:
+        raise ValueError("baseline and selected evaluations must contain the same ids")
+
+    shared = ("output", "score", "distance", "meaning", "metric")
+    return [
+        {
+            "id": row["id"],
+            "source": row["source"],
+            "dimension": row["dimension"],
+            "target": row["target"],
+            "before": {key: row[key] for key in shared},
+            "after": {key: selected_by_id[row["id"]][key] for key in shared},
+        }
+        for row in baseline
+    ]
+
+
 def tone_accuracy(score: float, target: float) -> float:
     """Return a 0..1 reward that penalises large misses disproportionately."""
     linear = max(0.0, 1.0 - abs(score - target) / 100.0)

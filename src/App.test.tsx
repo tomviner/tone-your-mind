@@ -110,7 +110,19 @@ describe("tone your mind", () => {
     expect(
       screen.getByText(/What Granite is actually told/i),
     ).toBeInTheDocument();
-    expect(screen.getByText(/59.8 → 61.2/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/wider writing prompt Granite receives/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/retries are the separate live loop/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: /before DSPy/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: /after DSPy/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/62.2 → 69.3/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "source" })).toHaveAttribute(
       "href",
       "https://github.com/tomviner/tone-your-mind",

@@ -73,9 +73,10 @@ class ToneContractTests(unittest.TestCase):
         self.assertIn("Attempt 2 (score 1.60): Read it soon.", prompt)
         self.assertIn("240 characters", prompt)
         system = result["messages"][0]["content"]
-        self.assertIn("exact target sentiment", system)
-        self.assertIn("focusing on tone accuracy", system)
-        self.assertIn("practical meaning", system)
+        self.assertIn("precisely convey the specified sentiment", system)
+        self.assertIn("primary focus", system)
+        self.assertIn("accurate tone representation", system)
+        self.assertIn("original practical meaning", system)
         self.assertNotIn(
             "Never add facts, names, dates, threats, promises, or instructions",
             system,

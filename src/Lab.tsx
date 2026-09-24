@@ -42,9 +42,9 @@ export default function Lab() {
             <span className="loop-number">02</span>
             <h3>Lab loop</h3>
             <p>
-              DSPy MIPROv2 proposes competing instructions. Fixed examples run
-              through Granite and Jev; the stronger instruction becomes the next
-              versioned production program.
+              DSPy MIPROv2 rewrites the wider writing prompt Granite receives.
+              Fixed examples run through Granite and Jev; the stronger prompt
+              becomes the next versioned production program.
             </p>
           </article>
         </div>
@@ -90,7 +90,7 @@ export default function Lab() {
                 <strong>{round.label}</strong>
                 <span>
                   {round.metric.toFixed(1)} ·{" "}
-                  {index === 0 ? "old metric" : "current"}
+                  {index === results.rounds.length - 1 ? "current" : "previous"}
                 </span>
               </div>
               <p>{round.outcome}</p>
@@ -120,6 +120,11 @@ export default function Lab() {
             </p>
           ))}
         </div>
+        <p className="lab-note">
+          These retries are the separate live loop. They correct one message
+          using the wider prompt DSPy has already selected; they do not rerun
+          DSPy.
+        </p>
       </section>
 
       <section className="lab-section" aria-labelledby="prompt-title">
@@ -138,10 +143,9 @@ export default function Lab() {
             <thead>
               <tr>
                 <th>Request</th>
-                <th>Granite wrote</th>
+                <th>Before DSPy</th>
+                <th>After DSPy</th>
                 <th>Target</th>
-                <th>Jev</th>
-                <th>Meaning</th>
               </tr>
             </thead>
             <tbody>
@@ -151,10 +155,25 @@ export default function Lab() {
                     <strong>{example.dimension}</strong>
                     <span>“{example.source}”</span>
                   </td>
-                  <td>{example.output}</td>
+                  <td>
+                    <span className="comparison-output">
+                      {example.before.output}
+                    </span>
+                    <span className="comparison-score">
+                      Jev {formatPoints(example.before.score)} · meaning{" "}
+                      {formatPoints(example.before.meaning)}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="comparison-output">
+                      {example.after.output}
+                    </span>
+                    <span className="comparison-score">
+                      Jev {formatPoints(example.after.score)} · meaning{" "}
+                      {formatPoints(example.after.meaning)}
+                    </span>
+                  </td>
                   <td>{formatPoints(example.target)}</td>
-                  <td>{formatPoints(example.score)}</td>
-                  <td>{formatPoints(example.meaning)}</td>
                 </tr>
               ))}
             </tbody>

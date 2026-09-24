@@ -76,9 +76,11 @@ session. The interface is deliberately honest about near misses.
 
 [`/lab`](https://tone-jev.tomv.uk/lab) publishes the selected system
 instruction, all five live feedback bands, retry escalation, fixed held-out
-examples, and the actual optimisation outcome—including misses. Production
-imports `worker/prompt_program.json`, the same versioned artifact shown by the
-lab; it does not maintain a hidden second prompt.
+examples before and after DSPy, and the actual optimisation outcome—including
+misses. The page separates the offline DSPy optimisation of Granite's wider
+writing prompt from the per-message live retries. Production imports
+`worker/prompt_program.json`, the same versioned artifact shown by the lab; it
+does not maintain a hidden second prompt.
 
 The offline compiler uses DSPy MIPROv2 with Granite as both task and prompt
 model. Jev reviews each candidate with two questions in one call: the requested

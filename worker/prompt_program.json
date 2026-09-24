@@ -1,5 +1,5 @@
 {
-  "version": "dspy-2026-09-24.2",
+  "version": "dspy-2026-09-24.3",
   "optimizer": "DSPy MIPROv2",
   "writer_model": "@cf/ibm-granite/granite-4.0-h-micro",
   "judge_model": "typesafe/jev",
@@ -7,7 +7,7 @@
     "tone_weight": 0.85,
     "meaning_weight": 0.15
   },
-  "system_instruction": "Revise the given source sentence to match the specified sentiment level on the tone scale, ensuring the message remains clear and conveys the intended practical meaning without exaggeration. Aim for the exact target sentiment, focusing on tone accuracy. Return only the revised message. Never mention a score, percentage, rating, slider, Jev, rubric, prompt, feedback, attempt, multiplier, or editing process.",
+  "system_instruction": "Rewrite the given source text to precisely convey the specified sentiment or tone from the scale, ensuring the rewritten message maintains its original practical meaning while staying true to the requested tone. The target tone may be low, middle, or high, but the primary focus should be on accurate tone representation rather than using stronger language unnecessarily. Return only the rewritten message without any additional information. Never mention a score, percentage, rating, slider, Jev, rubric, prompt, feedback, attempt, multiplier, or editing process.",
   "distance_bands": [
     {
       "max_points": 10,
@@ -35,5 +35,5 @@
     "The previous correction failed. Be emphatic, insistent, and far less restrained than feels natural.",
     "FINAL ATTEMPT. Be melodramatic, superlative, relentless, and almost absurdly explicit. Overcorrect with maximum force; subtlety has completely failed."
   ],
-  "optimizer_run": "2026-09-24-dspy-miprov2-round-2"
+  "optimizer_run": "2026-09-24-dspy-miprov2-round-3"
 }

@@ -1018,7 +1018,7 @@ blockquote {
 
 .example-table {
   width: 100%;
-  min-width: 760px;
+  min-width: 880px;
   border-collapse: collapse;
   font-size: 0.8rem;
 }
@@ -1042,7 +1042,7 @@ blockquote {
   border-bottom: 0;
 }
 
-.example-table td:nth-child(n + 3) {
+.example-table td:last-child {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
@@ -1057,6 +1057,24 @@ blockquote {
 .example-table td:first-child span {
   margin-top: 4px;
   color: var(--muted);
+}
+
+.comparison-output,
+.comparison-score {
+  display: block;
+}
+
+.comparison-score {
+  margin-top: 8px;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.example-table td:nth-child(3) {
+  background: rgb(225 255 242 / 42%);
 }
 
 .lab-reproduce {

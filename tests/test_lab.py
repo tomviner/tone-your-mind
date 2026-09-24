@@ -2,7 +2,12 @@ import json
 import unittest
 from pathlib import Path
 
-from lab.metric import combined_metric, parse_jev_review, tone_accuracy
+from lab.metric import (
+    combined_metric,
+    pair_evaluations,
+    parse_jev_review,
+    tone_accuracy,
+)
 
 
 class LabMetricTests(unittest.TestCase):
@@ -48,6 +53,60 @@ class LabMetricTests(unittest.TestCase):
 
         self.assertEqual(score, 60)
         self.assertEqual(meaning, 0.91)
+
+    def test_pairs_baseline_and_selected_evaluations_for_public_comparison(self):
+        baseline = [
+            {
+                "id": "example-1",
+                "source": "Please read this.",
+                "dimension": "Panic",
+                "target": 60.0,
+                "output": "Please read this soon.",
+                "score": 25.0,
+                "distance": 35.0,
+                "meaning": 99.0,
+                "metric": 55.0,
+            }
+        ]
+        selected = [
+            {
+                "id": "example-1",
+                "source": "Please read this immediately.",
+                "dimension": "Panic",
+                "target": 60.0,
+                "output": "Please read this immediately.",
+                "score": 62.5,
+                "distance": 2.5,
+                "meaning": 98.0,
+                "metric": 95.0,
+            }
+        ]
+
+        self.assertEqual(
+            pair_evaluations(baseline, selected),
+            [
+                {
+                    "id": "example-1",
+                    "source": "Please read this.",
+                    "dimension": "Panic",
+                    "target": 60.0,
+                    "before": {
+                        "output": "Please read this soon.",
+                        "score": 25.0,
+                        "distance": 35.0,
+                        "meaning": 99.0,
+                        "metric": 55.0,
+                    },
+                    "after": {
+                        "output": "Please read this immediately.",
+                        "score": 62.5,
+                        "distance": 2.5,
+                        "meaning": 98.0,
+                        "metric": 95.0,
+                    },
+                }
+            ],
+        )
 
 
 if __name__ == "__main__":
